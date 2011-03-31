@@ -1,0 +1,36 @@
+<productinfo
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="optional">
+<?xml-stylesheet type="text/xsl" href="optional"?>
+
+<matlabrelease>14</matlabrelease>
+<name>DocHelp</name>
+<type>toolbox</type>
+<icon>$toolbox/matlab/icons/book_mat.gif</icon>
+<help_location>help</help_location>
+
+<list>
+
+<listitem>
+<label>Help</label>
+<callback>doc docGuide</callback>
+<icon>$toolbox/matlab/icons/helpicon.gif</icon>
+</listitem>
+
+
+<listitem>
+<label>Demos</label>
+<callback>demo toolbox DocHelp</callback>
+<icon>$toolbox/matlab/icons/demoicon.gif</icon>
+</listitem>
+
+
+<listitem>
+<label>DocHelp Web Site</label>
+<callback>web http://code.google.com/p/dochelp -browser;</callback>
+<icon>$toolbox/matlab/icons/webicon.gif</icon>
+</listitem>
+
+</list>
+
+</productinfo>
