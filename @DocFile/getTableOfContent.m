@@ -52,7 +52,7 @@ function content = getShortDescription(docFile)
 
 if ifun
   text = helpfunc(docFile.sourceFile);
-
+  
   endPattern = '(?=\n %|\n[ ]*\n[ ]*|\n[ ]*$)';
   text = regexp(text,['(.*?)' endPattern],'match');
   if ~isempty(text)
@@ -66,10 +66,10 @@ if ifun
 else
   text = read(docFile);
   content = regexp(text,'^%%(?<title>.*?)\n(?<text>.*?)(?=%%|$)','names');
-  content.text = strtrim(regexprep(content.text,'%',''));  
+  content.text = strtrim(regexprep(content.text,'%',''));
   
-   % somehow xsl link transformation fails
-  content.title = regexprep(content.title,'\[\[(.*?),(.*?)\]\]','$2'); 
+  % somehow xsl link transformation fails
+  content.title = regexprep(content.title,'\[\[(.*?),(.*?)\]\]','$2');
 end
 
 
@@ -82,7 +82,7 @@ text = read(file);
 cellMarker = regexp(text,'%%');
 commentMarker = regexp(text,'\n(?=%)');
 iMarker = regexp(text,'\n(?!%)');
-lineBreak = regexp(text,'\n')
+lineBreak = regexp(text,'\n');
 
 for k=1:numel(cellMarker)
   nextLineBreak = min(lineBreak(cellMarker(k) < lineBreak));
@@ -92,14 +92,19 @@ for k=1:numel(cellMarker)
     nextCellMarker = cellMarker(k+1);
   else
     nextCellMarker = numel(text);
-  end 
+  end
   commentLines = commentMarker(commentMarker > cellMarker(k) & commentMarker-1 < nextCellMarker);
-  lastCommentLineBreak = min(lineBreak(max(commentLines) <= lineBreak));
-  
-  firstIStop = iMarker(min(commentLines) < iMarker);
-  
-  contents(k).text = text(commentLines(1):min([lastCommentLineBreak,  firstIStop]));
-  contents(k).text = strtrim(regexprep(contents(k).text,'%|\n',''));
+
+  if ~isempty(commentLines)
+    lastCommentLineBreak = min(lineBreak(max(commentLines) <= lineBreak));
+    
+    firstIStop = iMarker(min(commentLines) < iMarker);
+    
+    contents(k).text = text(commentLines(1):min([lastCommentLineBreak,  firstIStop]));
+    contents(k).text = strtrim(regexprep(contents(k).text,'%|\n',''));
+  else
+    contents(k).text = '';
+  end
   
 end
 
@@ -149,7 +154,7 @@ for k=2:numel(cellDescription)
     subtr = domAddChild(dom,subtable, 'tr',[]);
     
     td = domAddChild(dom,subtr, 'td');
-    a = domAddChild(dom,td,'a',cellDescription(k).title,{'href',[docName '.html' '#' num2str(k)]} );
+    a = domAddChild(dom,td,'a',cellDescription(k).title,{'href',[docName '.html' '#' num2str(k-1)]} );
   end
 end
 
