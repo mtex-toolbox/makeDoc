@@ -102,7 +102,9 @@ if isFunction(docFile)
 else
   str = read(docFile);
   
-  titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');  
+  titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');
+  titles = regexprep(titles,'\[\[(.*?),(.*?)\]\]','$2'); 
+  
   if isempty(titles), titles = {sourceInfo.docName}; end
   
   attributes = {'target',[sourceInfo.docName '.html']};

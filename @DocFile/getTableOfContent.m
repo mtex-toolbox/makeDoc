@@ -62,11 +62,11 @@ if ifun
   end
   
   content.title = docFile.sourceInfo.name;
-  content.summary = summary;
+  content.text = summary;
 else
   text = read(docFile);
-  content = regexp(text,'^%%(?<title>.*?)\n(?<summary>.*?)(?=%%|$)','names');
-  content.summary = strtrim(regexprep(content.summary,'%',''));  
+  content = regexp(text,'^%%(?<title>.*?)\n(?<text>.*?)(?=%%|$)','names');
+  content.text = strtrim(regexprep(content.text,'%',''));  
   
    % somehow xsl link transformation fails
   content.title = regexprep(content.title,'\[\[(.*?),(.*?)\]\]','$2'); 
@@ -78,22 +78,29 @@ function contents = getCellDescription(file)
 
 % read source
 text = read(file);
+% % markup title and summary
+cellMarker = regexp(text,'%%');
+commentMarker = regexp(text,'\n(?=%)');
+iMarker = regexp(text,'\n(?!%)');
+lineBreak = regexp(text,'\n')
 
-% markup title and summary
-regularTitlePattern   = '%% (?<title>(.*?))\n';
-regularSummaryPattern = '(?<summary>(.*?))(?=(%%|\n[ ]+|\n(?!%)))';
-emptyTitlePattern     = '%%[ ]*\n';
-wholePattern          = [regularTitlePattern '|' regularTitlePattern regularSummaryPattern '|' emptyTitlePattern];
-contents = regexp(text,wholePattern,'names');
-
-for k=1:numel(contents)
-  if ~isfield(contents(k),'summary')
-    contents(k).summary = '';
-  end
+for k=1:numel(cellMarker)
+  nextLineBreak = min(lineBreak(cellMarker(k) < lineBreak));
+  contents(k).title = text(cellMarker(k)+3:nextLineBreak-1);
   
-  if ~isempty(contents(k).summary)
-    contents(k).summary = regexprep(contents(k).summary,'(?>%[ ]*)|\n','');
-  end
+  if k<numel(cellMarker)
+    nextCellMarker = cellMarker(k+1);
+  else
+    nextCellMarker = numel(text);
+  end 
+  commentLines = commentMarker(commentMarker > cellMarker(k) & commentMarker-1 < nextCellMarker);
+  lastCommentLineBreak = min(lineBreak(max(commentLines) <= lineBreak));
+  
+  firstIStop = iMarker(min(commentLines) < iMarker);
+  
+  contents(k).text = text(commentLines(1):min([lastCommentLineBreak,  firstIStop]));
+  contents(k).text = strtrim(regexprep(contents(k).text,'%|\n',''));
+  
 end
 
 
@@ -121,9 +128,8 @@ domAddChild(dom,a,'img',[],...
 function addHeadingCell(dom,tr,cellDescription,docName)
 
 td = domAddChild(dom,tr, 'td',[],{'valign','top','width','250px'});
-
 a = domAddChild(dom,td,'a',cellDescription(1).title,{'href',[docName '.html']} );
-domAddChild(dom,a,'td',cellDescription(1).summary,{'valign','top','width','75%'});
+domAddChild(dom,a,'td',cellDescription(1).text,{'valign','top','width','75%'});
 
 
 function td = addSubHeadingCell(dom,tr,cellDescription,docName)
