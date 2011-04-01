@@ -34,7 +34,7 @@ Use the XSLT command to perform the conversion.
       </xsl:variable>
   
       <head><title><xsl:value-of select="$title"/></title><xsl:text>
-        </xsl:text><xsl:value-of select="'&lt;!-- DOCNAME: '" disable-output-escaping="yes"/><xsl:apply-templates select="$toolbox/name"/><xsl:value-of select="' Toolbox --&gt;'" disable-output-escaping="yes"/>
+        </xsl:text><xsl:value-of select="'&lt;!-- DOCNAME: '" disable-output-escaping="yes"/><xsl:value-of select="$toolbox/name" disable-output-escaping="yes"/><xsl:value-of select="' Toolbox --&gt;'" disable-output-escaping="yes"/>
         <meta name="chunktype" content="refpage"/><xsl:text>
         </xsl:text><xsl:value-of select="'&lt;!-- CHUNKNAME: '" disable-output-escaping="yes"/><xsl:value-of select="$docname"/><xsl:value-of select="' --&gt;'" disable-output-escaping="yes"/><xsl:text>
         </xsl:text><xsl:value-of select="'&lt;!-- HEADSTUFF: '" disable-output-escaping="yes"/><xsl:value-of select="$docname"/><xsl:value-of select="' --&gt;'" disable-output-escaping="yes"/><xsl:text>
@@ -180,7 +180,7 @@ Use the XSLT command to perform the conversion.
     <xsl:param name="sourceref"/>
     <div>
       <table class="nav" summary="Navigation aid" border="0" width="100%" cellpadding="0" cellspacing="0">
-        <tr><td valign="baseline"><xsl:apply-templates select="$toolbox/fullname"/></td>
+        <tr><td valign="baseline"><xsl:value-of select="$toolbox/fullname" disable-output-escaping="yes"/></td>
           <xsl:if test="string-length($sourceref) > 0">
             <td valign="baseline" align="right">
               <a>
@@ -199,13 +199,12 @@ Use the XSLT command to perform the conversion.
     <div class="myheader">
       <table border="0" width="100%" cellpadding="10" cellspacing="0">
         <tr>
-          
           <td valign="baseline" align="left" style="color:white"><a style="color:white">
               <xsl:attribute name="href"><xsl:text>matlab:edit </xsl:text><xsl:value-of select="$sourceref"/></xsl:attribute>
           <xsl:text>Open Matlab File in the Editor</xsl:text></a></td>
           <td valign="baseline" align="right" style="color:white">
             <a style="color:white"><xsl:attribute name="href"><xsl:value-of select="$toolbox/procuctpage"/></xsl:attribute>
-          <xsl:apply-templates select="$toolbox/name"/></a></td>
+          <xsl:value-of select="$toolbox/name" disable-output-escaping="yes"/></a></td>
         </tr>
       </table>  
     </div>
@@ -216,7 +215,7 @@ Use the XSLT command to perform the conversion.
     <p style="font-size:1px;"> </p>
     <table class="footer" border="0" width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td valign="baseline" align="right"><xsl:apply-templates select="$toolbox/versionname"/></td>
+        <td valign="baseline" align="right"><xsl:value-of select="$toolbox/versionname" disable-output-escaping="yes"/></td>
       </tr>
     </table>  
   </xsl:template>
@@ -331,13 +330,23 @@ Use the XSLT command to perform the conversion.
   
   
   <!-- global replacement of links -->
-  <xsl:template match="text()"> 
+<xsl:template match="text//text()"> 
     <xsl:call-template name="transformlink">
       <xsl:with-param name="string">
         <xsl:value-of select="."/>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
+ 
+  
+    <xsl:template match="steptitle//text()"> 
+    <xsl:call-template name="transformlink">
+      <xsl:with-param name="string">
+        <xsl:value-of select="."/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>
+  
   
   <xsl:template match="html">
     <xsl:call-template name="transformlink">

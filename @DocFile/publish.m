@@ -6,8 +6,8 @@ function html_out = publish( docFiles, varargin )
 %
 %% Options
 % mainFile   - start for the toc,
-% outputDir  - 
-% evalCode   - 
+% outputDir  -
+% evalCode   -
 % force      -
 % viewoutput -
 % format     - html / latex / xml ...
@@ -36,7 +36,7 @@ end
 
 
 
-viewOutput(html_out,options);
+% viewOutput(html_out,options);
 
 
 function options = parseArguments(options)
@@ -62,7 +62,7 @@ if ~isfield(options,'format')
 end
 
 if ~isfield(options,'viewoutput')
-  options.viewoutput = false;
+  options.viewoutput = true;
 end
 
 if ~isfield(options,'force')
@@ -239,6 +239,7 @@ if is_newer(file.sourceFile,target)  || options.force
   
   target = publish(file.targetTemporary,pOptions);
   
+  
   if pOptions.evalCode
     cd(oldDir)
   end
@@ -263,6 +264,9 @@ outputDir = options.publishSettings.outputDir;
 
 oldDir = cd; cd(tempDir);
 % cd
+
+pub = docFiles(1);
+
 for docFile = docFiles
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
@@ -270,7 +274,13 @@ for docFile = docFiles
     html_out = publish(docFile.targetTemporary,options.publishSettings);
     movefile(html_out,htmlTarget);
     
-    disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
+    pub(end+1) = docFile;
+    
+    if options.viewoutput
+      view(pub,outputDir);
+    else
+      disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
+    end
   end
 end
 
