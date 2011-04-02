@@ -156,10 +156,15 @@ div.funcrefpage {
   font-size: 11pt;
   border-style: solid;
   border-width: 0px 0px 1px 0px;
-  text-align: right;
 }
 
-
+div.note {
+ background: #eaefff;
+  margin:5px 25px 5px 25px;
+  padding:4px;
+  border-style: solid;
+  border-width: 1px 1px 1px 1px  #888888;
+}
 
 div.subheading {
   /* background: #e1ebfd;*/
@@ -273,6 +278,25 @@ table.summary {
   margin-bottom:5px;
   background-color:#F3F4F5; 
 }
+
+
+table.usertable {
+  border:1px solid #888888;
+  padding:3px;
+  margin-left:15px;
+  margin-top:15px;
+  margin-bottom:5px;
+  background-color:#F8F9FA; 
+}
+
+table.usertable td { 
+  vertical-align:top;
+  border:0px solid #888888;
+  padding:4px;
+  padding-left:15px;
+  padding-right:15px;
+}
+
 
 
 

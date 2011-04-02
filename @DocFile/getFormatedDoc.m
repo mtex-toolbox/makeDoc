@@ -12,7 +12,8 @@ function helpStr = getFormatedDoc( file, docFiles )
 % DocFile/getFormatedRef DocFile/publish
 
 helpStr = read(file);
-helpStr = regexprep(helpStr,'\r','');
+helpStr = globalReplacements(helpStr);
+
 % helpStr = regexprep(helpStr,'_','\\\_');
 
 if hasTocFile(file)

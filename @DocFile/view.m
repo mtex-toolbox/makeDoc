@@ -47,7 +47,7 @@ if nargin > 1
   
   
   set(wrzd_list,'Value',numel(link));
-  web(link{numel(link)});
+%   web(link{numel(link)});
   figure(wzrd);
   
 else

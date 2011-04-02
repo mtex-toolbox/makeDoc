@@ -2,8 +2,8 @@ function xsl_file = getPublishStyle(type)
 % returns the location of the xsl-stylesheet
 %
 %% Input
-% type  - style 
-% 
+% type  - style
+%
 %  * 'latex'
 %  * 'html' | 'xml'
 %
@@ -14,8 +14,10 @@ switch type
     style = 'latex.xsl';
   case 'latex2'
     style = 'mxdom2latex.xsl';
-  case {'html','xml'}
+  case 'html'
     style =  'publish.xsl';
+  case 'xml'
+    style =  'tempxml.xsl';
 end
 
 xsl_file = fullfile(docHelpPath,'resources','style',style);
