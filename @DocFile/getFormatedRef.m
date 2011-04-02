@@ -7,7 +7,7 @@ function helpStr = getFormatedRef( file ,varargin)
 %% Output
 % helpString - a string for publishing
 %
-%% Remarks !TODO 
+%% Remarks !TODO
 % 'input', 'output', 'example', 'see also', 'description', 'syntax', 'view code'
 %
 %% See also
@@ -28,7 +28,7 @@ if ~isempty(sections)
   [content, isNew ]= addContentByTopic(content,sections,'Syntax',@preSyntax,options);
   [isFunc, Syntax] = isFunction(file);
   if ~isNew && isFunc
-    content = [addTitle(content,'Syntax') preSyntax(Syntax,sections,options)];
+    content = [addTitle(content,'Syntax') char(10) preSyntax(Syntax,sections,options)];
   end
   content = addContentByTopic(content,sections,'Input',@preInComment,options);
   content = addContentByTopic(content,sections,'Output',@preOutComment,options);
@@ -38,6 +38,8 @@ if ~isempty(sections)
 else
   helpStr = 'error';
 end
+
+% helpStr
 
 
 function options = parseArguments(options)
@@ -60,20 +62,29 @@ function  sections = help2struct(file)
 
 
 helpStr = helpfunc(file.sourceFile);
-helpStr = regexprep( helpStr,'@(\w*)','[[$1_index.html,$1]]');
-% helpStr = getHelp(file);
-%
 docName = file.sourceInfo.docName;
 Title = regexprep(docName,'(\w*)\.(\w*)', ...
   ['$2' char(10) '   \(method of [[$1_index.html,$1]]\)' char(10) ' % ']);
 
 helpStr = [' % ' Title  char(10)  helpStr];
 
-sectionPattern = '%(?<title>(.*?))\n(?<content>(.*?))(?=\n %|$)';
-sections = regexp(helpStr,sectionPattern,'names');
-%
-for k=1:numel(sections)
-  sections(k).title = strtrim(sections(k).title);
+helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
+helpStr = globalReplacements(helpStr);
+
+m = m2struct(helpStr);
+
+
+% unsafe
+% sectionPattern = '%%(?<title>(.*?))\n(?<content>(.*?))(?=\n%%|$)|%%(?<title>(.*?))(?=\n%%|$)';
+% sections = regexp(helpStr,sectionPattern,'names');
+
+
+for k=1:numel(m)
+  sections(k).title = strtrim(m(k).title);
+  
+  text = cellfun(@(x) ['% ' x char(10)],m(k).text,'Uniformoutput',false);
+  text = [text{:}];
+  sections(k).content = text;
   %   sections(k).content = regexprep(sections(k).content, '^%','');
 end
 
@@ -117,23 +128,24 @@ if any(isTopic)
     nextTopic = nextTopic+1;
   end
   
-  content = regexprep(content,'^\s|\n','\n%');
+  content = regexprep(content,'^\s|\n','\n');
 else
   content = '';
 end
 
 
 function out = inline(in,sections)
-
+% in
+% out = in
 out = regexprep([char(10) '% ' in],'\s%[ ]+','\n% ');
 
 function out = pre(in,sections)
 
 % description line       %%
 %   function line    ->  % description line
-% description line       
+% description line
 %                        function line
-%                        
+%
 %                        %%
 %                        % description line
 %
@@ -165,6 +177,7 @@ for k=1:numel(content)
 end
 
 out = dom2char(dom);
+out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
 % s = xmlwrite(dom);
 % out = s(40:end);
 % out = regexprep(out,'\r','');
@@ -172,6 +185,8 @@ out = dom2char(dom);
 
 
 function out = preSyntax(in,sections,options)
+
+
 
 dom = domCreateDocument('html');
 
@@ -195,6 +210,7 @@ for k=1:numel(content)
     domAddChild(dom,div,'tt',content(k).param);
     
     node = dom.importNode(content(k).comment,true);
+    
     p = node.getElementsByTagName('p');
     for l=0:numel(p)-1
       dom.renameNode(p.item(l),[],'span');
@@ -204,7 +220,7 @@ for k=1:numel(content)
 end
 
 out = dom2char(dom);
-
+out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
 
 
 
@@ -241,7 +257,7 @@ syntax = regexprep(sections(1).title,'\(.*\)','');
 if ~isempty(newContent)
   
   content = format(newContent,options);
-    
+  
   row = domAddChild(dom,table,'tr');
   td = domAddChild(dom,row,'td',[],{'width','100px'});
   domAddChild(dom,td,'tt','param,val');
@@ -274,9 +290,9 @@ end
 
 
 if ~isempty(newContent)
-  
+  %   newContent
   content = format(newContent,options);
-    
+  
   row = domAddChild(dom,table,'tr');
   td = domAddChild(dom,row,'td',[],{'width','100px'});
   domAddChild(dom,td,'tt','param');
@@ -303,23 +319,10 @@ if ~isempty(newContent)
 end
 
 out = dom2char(dom);
+out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
 
-
-function out = dom2char(dom)
-
-s = xmlwrite(dom);
-if numel(s)>46
-  out = s(40:end);
-  out = regexprep(out,'<text>|</text>','');
-  out = regexprep(out,'(\n( )*)*\n','\n');
-  out = regexprep([char(10)  out],'\n','\n% ');
-  out = [out char(10), '%' char(10)]; % save cell end
-else
-  out = '';
-end
 
 function form = format(in,options,form)
-
 
 in = regexprep(in,'%','');
 in = strtrim(in);
@@ -338,10 +341,14 @@ p = strfind(in,'-');
 if isempty(p)
   form(end+1).param = in;
 else
-  lineBreak = [0 regexp(in,'\n')];
+%   [start,stop] = regexp(in,'^( )*|\n( )*');
+%   in
+%   stop-start
+  lineBreak= [0 regexp(in,'\n')];
+  
   lastLineBreak = lineBreak(lineBreak<p(1));
   lastLineBreak = lastLineBreak(end);
- 
+  
   if numel(p)>1 % allow markup -- instead of -
     a = diff(p);
     if numel(a) > 1
@@ -367,37 +374,19 @@ else
   
   form(end+1).param = strtrim(in(lastLineBreak+1:p(1)-1));
   
-  comment = in(p(1)+1:nextLineBreak);
+  comment = subText(in,p(1)+2,nextLineBreak,true);
   comment = regexprep(comment,'--','-');
   
-  s = regexprep(['%% ' char(10) comment],'\n[ ]*','\n% ');
-  fname = fullfile(options.outputDir, [options.file.sourceInfo.docName '_tmp.m']);
-  save(fname,s);
+  s = regexprep(['%% ' char(10) comment],'\n','\n% ');
   
-  poptions.evalCode = false;
-  poptions.format = 'xml';
-  poptions.outputDir = options.outputDir;
-  poptions.figureSnapMethod='print';
-  poptions.useNewFigure = true;
-  poptions.imageFormat= 'png';
   
-  oldDir = cd; cd(options.outputDir); 
+  fname = fullfile(options.outputDir, ...
+    [options.file.sourceInfo.docName '_tmp.m']);
   
-  o = publish(fname,poptions);
-  dom = xmlread(o);
+  text = tmpPublish(s,fname);
   
-  cd(oldDir);
-  
-  recycle('off');
-  delete(o);
-  delete(fname);
-  
-  %   xml = xmlwrite(dom)
-  %   t = regexp(xml,'(?<=<text>).*?(?=</text>)','match');
-  text = dom.getElementsByTagName('text').item(0);
-  
-  form(end).comment = text; %strtrim(regexprep(in(p(1)+1:nextLineBreak),'\n',''));
-  
+  form(end).comment = text;
+   
   if strcmp(in(nextLineBreak+1:end),in)
     disp(in)
     view(options.file)
