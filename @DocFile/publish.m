@@ -1,4 +1,4 @@
-function html_out = publish( docFiles, varargin )
+function [html_out,success] = publish( docFiles, varargin )
 % publishes the docFiles
 %
 %% Input
@@ -31,7 +31,7 @@ switch options.format
       copyfile(files{k},options.publishSettings.outputDir);
     end
     
-    html_out = publishFiles(docFiles,options);
+    [html_out,success] = publishFiles(docFiles,options);
 end
 
 
@@ -41,12 +41,15 @@ end
 
 function options = parseArguments(options)
 
-
-if ~isstruct(options)
-  if mod(numel(options),2)
-    error('forgotten argument of option');
+if ~isempty(options)
+  if ~isstruct(options{1})
+    if mod(numel(options),2)
+      error('forgotten argument of option');
+    end
+    options = cell2struct(options(2:2:end)',options(1:2:end)');
+  else
+    options = options{1};
   end
-  options = cell2struct(options(2:2:end)',options(1:2:end)');
 end
 
 if ~isfield(options,'force')
@@ -86,36 +89,53 @@ if ~isfield(options,'documentClass')
   options.documentClass = 'article';
 end
 
-if ~isfield(options,'outputDir')
-  options.outputDir = fullfile(cd,'help');
+
+
+% if ~isfield(options,'publishSettings')
+
+switch options.format
+  case {'latex','tex'}
+    format = 'xml';
+    style = 'latex';
+    imageFormat = 'epsc2';
+  case {'html','jar','help'}
+    format = 'html';
+    style = 'html';
+    imageFormat = 'png';
+  case {'xml'}
+    format = 'xml';
+    imageFormat = 'png';
+    style = 'html';
 end
 
-if ~isfield(options,'publishSettings')
-  
-  switch options.format
-    case {'latex','tex'}
-      format = 'xml';
-      style = 'latex';
-      imageFormat = 'epsc2';
-    case {'html','jar','help'}
-      format = 'html';
-      style = 'html';
-      imageFormat = 'png';
-    case {'xml'}
-      format = 'xml';
-      imageFormat = 'png';
-      style = 'html';
-  end
-  
-  publishSettings.format = format;
-  publishSettings.figureSnapMethod = 'print';
-  publishSettings.outputDir = options.outputDir;
-  publishSettings.useNewFigure = true;
-  publishSettings.evalCode = options.evalCode;
-  publishSettings.imageFormat = imageFormat;
-  publishSettings.stylesheet = getPublishStyle(style);
-  
-  options.publishSettings = publishSettings;
+% end
+
+if ~isfield(options.publishSettings,'format')
+  options.publishSettings.format = format;
+end
+
+if ~isfield(options.publishSettings,'figureSnapMethod')
+  options.publishSettings.figureSnapMethod = 'print';
+end
+
+if ~isfield(options.publishSettings,'outputDir')
+  options.publishSettings.outputDir = options.outputDir;
+end
+
+if ~isfield(options.publishSettings,'useNewFigure')
+  options.publishSettings.useNewFigure = true;
+end
+
+if ~isfield(options.publishSettings,'evalCode')
+  options.publishSettings.evalCode = options.evalCode;
+end
+
+if ~isfield(options.publishSettings,'imageFormat')
+  options.publishSettings.imageFormat = imageFormat;
+end
+
+if ~isfield(options.publishSettings,'stylesheet')
+  options.publishSettings.stylesheet = getPublishStyle(style);
 end
 
 options = rmfield(options,{'outputDir','evalCode'});
@@ -256,28 +276,46 @@ copynode = dom.importNode(domnode.getDocumentElement,true);
 node.appendChild(copynode);
 
 
-function htmlTarget = publishFiles(docFiles,options)
+function [htmlTarget,success] = publishFiles(docFiles,options)
 
 tempDir = options.tempDir;
 outputDir = options.publishSettings.outputDir;
-
+options.publishSettings.catchError = false;
 
 oldDir = cd; cd(tempDir);
 % cd
 
-pub = docFiles(1);
+pub = {};
+success = [];
 
 for docFile = docFiles
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
   if is_newer(docFile.sourceFile,htmlTarget) || options.force
-    html_out = publish(docFile.targetTemporary,options.publishSettings);
-    movefile(html_out,htmlTarget);
-    
-    pub(end+1) = docFile;
+    try
+      %       edit(docFile.targetTemporary)
+      html_out = publish(docFile.targetTemporary,options.publishSettings);
+      movefile(html_out,htmlTarget);
+      
+      success(end+1) = true;
+    catch e
+      success(end+1) = false;
+      
+      disp(['Error occured in File: ' docFile.sourceFile ])
+      f = strmatch(docFile.sourceInfo.name,{e.stack.name});
+      if ~isempty(f)
+        stack = e.stack(f);
+        disp(['   (in file <a href="matlab: opentoline(''' ...
+          docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
+        fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
+      else
+        rethrow(e)
+      end
+    end
     
     if options.viewoutput
-      view(pub,outputDir);
+      pub{end+1} = docFile;
+      view([pub{:}],options,success);
     else
       disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
     end

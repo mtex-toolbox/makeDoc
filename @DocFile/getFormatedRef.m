@@ -16,7 +16,7 @@ function helpStr = getFormatedRef( file ,varargin)
 options = parseArguments(varargin);
 options.file = file;
 
-sections = help2struct(file);
+sections = help2struct(file,options);
 
 if ~isempty(sections)
   content = addContentByTopic('',sections,sections(1).title,@inline);
@@ -28,10 +28,11 @@ if ~isempty(sections)
   [content, isNew ]= addContentByTopic(content,sections,'Syntax',@preSyntax,options);
   [isFunc, Syntax] = isFunction(file);
   if ~isNew && isFunc
-    content = [addTitle(content,'Syntax') char(10) preSyntax(Syntax,sections,options)];
+    content = [addTitle(content,'Syntax') preSyntax(Syntax,sections,options)];
   end
   content = addContentByTopic(content,sections,'Input',@preInComment,options);
   content = addContentByTopic(content,sections,'Output',@preOutComment,options);
+  content = addContentByTopic(content,sections,'Remarks',@inline);
   content = addContentByTopic(content,sections,'Example',@pre);
   content = addContentByTopic(content,sections,'See also',@inline);
   helpStr = content;
@@ -57,20 +58,19 @@ end
 
 
 
-function  sections = help2struct(file)
+function  sections = help2struct(file,options)
 % struct('title','sectioname','content','descriptive text')
 
 
 helpStr = helpfunc(file.sourceFile);
 docName = file.sourceInfo.docName;
 Title = regexprep(docName,'(\w*)\.(\w*)', ...
-  ['$2' char(10) '   \(method of [[$1_index.html,$1]]\)' char(10) ' % ']);
+  ['$2' char(10) '  \(method of [[$1_index.html,$1]]\)' char(10) ' % ']);
 
 helpStr = [' % ' Title  char(10)  helpStr];
 
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
-helpStr = globalReplacements(helpStr);
-
+helpStr = globalReplacements(helpStr,options.outputDir);
 m = m2struct(helpStr);
 
 
@@ -116,30 +116,86 @@ content = [content c '%% ' title];
 function content = getContentByTopic(sections,topic,format)
 
 topic = regexptranslate('escape',topic);
-regexpi({sections.title},topic,'start');
-
-isTopic = ~cellfun('isempty',regexpi({sections.title},topic,'start'));
-if any(isTopic)
-  content = [' ' sections(isTopic).content];
-  nextTopic = find(isTopic)+1;
-  
-  while nextTopic <= numel(isTopic) && isempty(sections(nextTopic).title)
-    content =[ content char(10) '% ' char(10) sections(nextTopic).content];
-    nextTopic = nextTopic+1;
+% regexpi({sections.title},topic,'start');
+topicFound = false;
+content = '';
+for k=1:numel(sections)
+  if strncmp(lower(sections(k).title),lower(topic),numel(topic))
+    content = [' ' sections(k).content];
+    topicFound = true;
+  elseif topicFound && isempty(sections(k).title)
+     content = [content char(10) '% ' char(10)  sections(k).content];
+  else
+    topicFound = false;
   end
-  
-  content = regexprep(content,'^\s|\n','\n');
-else
-  content = '';
 end
+
+content = regexprep(content,'^\s|\n','\n');
+
+% % topic
+% {sections.title}
+% isTopic = ~cellfun('isempty',regexpi({sections.title},topic,'start'))
+% if any(isTopic)
+%   content = [' ' sections(isTopic).content];
+%   nextTopic = find(isTopic)+1;
+%   nextTopic
+%   
+%   while nextTopic <= numel(isTopic) && isempty(sections(nextTopic).title)
+%     content =[ content char(10) '% ' char(10) sections(nextTopic(1)).content];
+%     nextTopic = nextTopic+1;
+%   end
+%   
+%   content = regexprep(content,'^\s|\n','\n');
+% else
+%   content = '';
+% end
 
 
 function out = inline(in,sections)
-% in
-% out = in
-out = regexprep([char(10) '% ' in],'\s%[ ]+','\n% ');
+
+out = subText(in,1,numel(in));
+
+
+% out = regexprep([char(10) '% ' out],'\n%[ ]*','\n% ');
+out = regexprep(out,'\n\n','\n%');
+
 
 function out = pre(in,sections)
+
+lineStart = regexp([in  '% '],'(^%|\n% )');
+
+f = {}; % function line
+c = {}; % comment line
+out = '';
+for k=1:numel(lineStart)-1
+  if (numel(in)>lineStart(k)+4) && all(in( lineStart(k)+2:lineStart(k)+4) == ' ')
+    if ~isempty(c)
+      c = cellfun(@(x) [char(10) x],c,'uniformoutput',false);
+      c = [c{:}];
+      out = [out char(10) '%% ' c];
+      
+      c = {};
+    end
+    f{end+1} = in(lineStart(k)+5:lineStart(k+1)-1);
+  else
+    if ~isempty(f)
+      f = cellfun(@(x) [char(10) x],f,'uniformoutput',false);
+      f = [f{:}];
+      
+      out = [out char(10) f char(10) ];
+      f = {};
+    end
+    c{end+1} =  in(lineStart(k)+1:lineStart(k+1)-1);
+  end
+  
+end
+c = cellfun(@(x) [char(10) x],c,'uniformoutput',false);
+c = [c{:}];
+out = [out char(10) '%% ' c char(10)];
+
+out = regexprep(out,'\n( )*','\n');
+out = regexprep(out,'\n(\n%( )*\n)*','\n');
+
 
 % description line       %%
 %   function line    ->  % description line
@@ -150,10 +206,10 @@ function out = pre(in,sections)
 %                        % description line
 %
 
-out = regexprep(in, '(^%|\n%)  [ ]+','\n');
-out = regexprep(out, '(^%|\n%)[ ]*','\n% ');
-out = regexprep(out, '(^%|\n%)(.*?)\n(?!%)','\n%$2\n\n');
-out = regexprep(out, '((^|\n)(?!%))(.*?)\n%','\n$2\n\n%%\n%');
+% out = regexprep(in, '(^%|\n%)  [ ]+','\n');
+% out = regexprep(out, '(^%|\n%)[ ]*','\n% ');
+% out = regexprep(out, '(^%|\n%)(.*?)\n(?!%)','\n%$2\n\n');
+% out = regexprep(out, '((^|\n)(?!%))(.*?)\n%','\n$2\n\n%%\n%');
 
 function out = preOutComment(in,sections,options)
 
@@ -196,23 +252,20 @@ div = domAddChild(dom,dom.getDocumentElement,'div',[],...
 
 content = format(in,options);
 
-for k=1:numel(content)
-  %   row = domAddChild(dom,table,'tr');
-  
+for k=1:numel(content)  
   p = domAddChild(dom,div,'div');
   domAddChild(dom,p,'tt',regexprep(content(k).param,'[ ]*\|[ ]*',', '));
 end
 
 for k=1:numel(content)
   if ~isempty(content(k).comment)
-    %     text = ['<tt>' content(k).param  '</tt> ' content(k).comment];
     div = domAddChild(dom,dom.getDocumentElement,'div',[],{'class','syntax','width','100%'});
     domAddChild(dom,div,'tt',content(k).param);
     
     node = dom.importNode(content(k).comment,true);
-    
+  
     p = node.getElementsByTagName('p');
-    for l=0:numel(p)-1
+    for l=0:p.getLength-1
       dom.renameNode(p.item(l),[],'span');
     end
     div.appendChild(node);
@@ -221,7 +274,7 @@ end
 
 out = dom2char(dom);
 out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
-
+% out = out(2:end);
 
 
 function out = preInComment(in,sections,options)
@@ -337,56 +390,41 @@ if isempty(in)
   return
 end
 
-p = strfind(in,'-');
-if isempty(p)
+start = strfind(in,'-');
+if isempty(start)
   form(end+1).param = in;
 else
-%   [start,stop] = regexp(in,'^( )*|\n( )*');
-%   in
-%   stop-start
-  lineBreak= [0 regexp(in,'\n')];
+  lineBreak = [0 regexp(in,'\n')];
+  lastLineBreak = max(lineBreak(lineBreak<start(1)));
   
-  lastLineBreak = lineBreak(lineBreak<p(1));
-  lastLineBreak = lastLineBreak(end);
+  pn = strfind(in,'--');
+  start(ismember(start,[pn pn+1])) = [];
   
-  if numel(p)>1 % allow markup -- instead of -
-    a = diff(p);
-    if numel(a) > 1
-      n = (a(1:end-1) > 1 & a(2:end) >1);
-      n = find(n,1,'first');
-      if isempty(n)
-        if a(end) > 1
-          nextLineBreak = p(end-1);
-        else
-          nextLineBreak = numel(in);
-        end
-      else
-        nextLineBreak = lineBreak(lineBreak<p(n+1));
-      end
-    else
-      nextLineBreak = lineBreak(lineBreak<p(2));
-    end
-    
+  if numel(start)>1
+    nextLineBreak = max(lineBreak(lineBreak<start(2)));
   else
     nextLineBreak = numel(in);
   end
-  nextLineBreak = nextLineBreak(end);
   
-  form(end+1).param = strtrim(in(lastLineBreak+1:p(1)-1));
-  
-  comment = subText(in,p(1)+2,nextLineBreak,true);
+  param = strtrim(in(lastLineBreak+1:start(1)-1));
+  param = regexprep(param,'--','-');
+
+  comment = subText(in,start(1)+2,nextLineBreak+1,true);
   comment = regexprep(comment,'--','-');
+	if ~isempty(strtrim(comment))
+    s = regexprep(['%% ' char(10) comment],'\n','\n% ');
+
+    fname = fullfile(options.outputDir, ...
+      [options.file.sourceInfo.docName '_tmp.m']);
+
+    text = tmpPublish(s,fname);
+  else
+    text = [];
+  end
   
-  s = regexprep(['%% ' char(10) comment],'\n','\n% ');
-  
-  
-  fname = fullfile(options.outputDir, ...
-    [options.file.sourceInfo.docName '_tmp.m']);
-  
-  text = tmpPublish(s,fname);
-  
+  form(end+1).param = param;
   form(end).comment = text;
-   
+  
   if strcmp(in(nextLineBreak+1:end),in)
     disp(in)
     view(options.file)

@@ -1,4 +1,4 @@
-function helpStr = getFormatedDoc( file, docFiles )
+function helpStr = getFormatedDoc( file, docFiles,out )
 % returns a processed string for normal script files
 %
 %% Input
@@ -12,8 +12,11 @@ function helpStr = getFormatedDoc( file, docFiles )
 % DocFile/getFormatedRef DocFile/publish
 
 helpStr = read(file);
-helpStr = globalReplacements(helpStr);
-
+if nargin > 2
+  helpStr = globalReplacements(helpStr,out);
+else
+  helpStr = globalReplacements(helpStr);
+end
 % helpStr = regexprep(helpStr,'_','\\\_');
 
 if hasTocFile(file)
@@ -76,7 +79,7 @@ if numel(name)>6 && strcmp(name(end-5:end),'_index')
     str = regexprep(['%% Complete Function list' char(10) char(10) str],'\n','\n% ');
     
     
-    helpStr = [helpStr str];
+    helpStr = [helpStr char(10) str];
   end
 end
 
