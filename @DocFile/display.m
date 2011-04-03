@@ -1,4 +1,4 @@
-function [ char ] = display( files )
+function display( files )
 % just display the DocFile object 
 
 
