@@ -2,7 +2,11 @@ function content = getTableOfContent(files , format,dom)
 % produces a summary html-table for given doc-files
 %
 %% Input
-% format - 'short','toc'
+% format - availible formates are
+%
+%    * |'short'|
+%    * |'toc'|
+%
 
 
 if nargin < 2,

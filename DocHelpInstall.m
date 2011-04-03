@@ -1,5 +1,8 @@
 function DocHelpInstall
 % installs the DocHelp toolbox by adding to the search path
+%
+%% See also
+% DocHelpUninstall
 
 folder = fileparts(mfilename('fullpath'));
 addpath(folder);

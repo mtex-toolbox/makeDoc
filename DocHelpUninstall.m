@@ -1,6 +1,8 @@
 function DocHelpUninstall
 % uninstalls the DocHelp toolbox by removing from the search path
-
+%
+%% See also
+% DocHelpInstall
 
 folder = fileparts(mfilename('fullpath'));
 rmpath(folder);
