@@ -10,7 +10,7 @@ function file = DocFile(files,varargin)
 % getFiles
 %
 %% Example
-%   f = DocFile(fullfile(cd,'..','docGuide'))
+%   doc = DocFile(fullfile(docHelpPath,'help','docGuide'))
 %
 
 if nargin < 1
