@@ -329,24 +329,22 @@ Use the XSLT command to perform the conversion.
   
   
   
-  <!-- global replacement of links -->
-<xsl:template match="text//text()"> 
+  <!-- global replacement of links -->  
+  <xsl:template match="text//text()">
+    <xsl:call-template name="transformlink">
+      <xsl:with-param name="string">
+        <xsl:value-of select="."/>
+      </xsl:with-param>
+    </xsl:call-template>
+  </xsl:template>  
+  
+  <xsl:template match="steptitle//text()"> 
     <xsl:call-template name="transformlink">
       <xsl:with-param name="string">
         <xsl:value-of select="."/>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
- 
-  
-    <xsl:template match="steptitle//text()"> 
-    <xsl:call-template name="transformlink">
-      <xsl:with-param name="string">
-        <xsl:value-of select="."/>
-      </xsl:with-param>
-    </xsl:call-template>
-  </xsl:template>
-  
   
   <xsl:template match="html">
     <xsl:call-template name="transformlink">
@@ -355,7 +353,6 @@ Use the XSLT command to perform the conversion.
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
-  
   
   
   <!-- Code input and output -->
@@ -378,7 +375,10 @@ Use the XSLT command to perform the conversion.
   
   <xsl:template match="img">
     <img vspace="5" hspace="5">
-      <xsl:attribute name="src"><xsl:value-of select="@src"/></xsl:attribute><xsl:text> </xsl:text>
+      <xsl:attribute name="src">
+        <xsl:call-template name="backreplacelinkdot"><xsl:with-param name="string" select="@src"/></xsl:call-template>
+        <!--<xsl:value-of select="@src"/>-->
+      </xsl:attribute><xsl:text> </xsl:text>
     </img>
   </xsl:template>
   

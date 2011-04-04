@@ -86,7 +86,7 @@ else
 end
 % 
 % target = fullfile(outputDir,sourceInfo.docName);
-currentFile.targetTemporary = ['script_' regexprep(sourceInfo.docName,'\.','_'),sourceInfo.ext];
+currentFile.targetTemporary = ['script_' regexprep(sourceInfo.docName,'\.','__'),sourceInfo.ext];
 % currentFile.targetFile = [target,'.html'];
 % 
 % % eval or not?
