@@ -4,11 +4,11 @@ function files = getFiles(root, pattern, recursive)
 %% Syntax
 % files = getFiles(root) - returns a cell--array of files at location |root|
 % files = getFiles(root,pattern) - all files at |root| that matches the pattern.
-%                          the pattern is regular expression like, e.g
-%                          '*.m|*.html' to collect all m--files and html--files
+%    the pattern is regular expression like, e.g
+%    '*.m|*.html' to collect all m--files and html--files
 % files = getFiles(root,pattern, recursive) - the flag |recursive| is logical,
-%                          i.e. if |true|, recursively apply pattern to all
-%                          sub--dirs, otherwise |false| (by default).
+%    i.e. if |true|, recursively apply pattern to all
+%    sub--dirs, otherwise |false| (by default).
 %
 %% Input
 % root      - path (e.g. cd)
@@ -16,7 +16,7 @@ function files = getFiles(root, pattern, recursive)
 % recursive - logical true/false 
 %
 %% Output
-% files     - cell--array of fullpath-files
+% files     - cell--array of fullpath--files
 %
 %% See also
 % DocFile/DocFile
