@@ -109,7 +109,8 @@ switch options.format
 end
 
 % end
-
+options.publishSettings = struct;
+options.publishSettings.useNewFigure = true;
 if ~isfield(options.publishSettings,'format')
   options.publishSettings.format = format;
 end
@@ -162,10 +163,18 @@ for k = 1:n
   progress(k,n,'preparing ')
   docFile = docFiles(k);
   %   docFile
+  %   docFile
   target = fullfile(tempDir,docFile.targetTemporary);
   targetTmp = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
-  if is_newer(docFile.sourceFile,target) || is_newer(docFile.sourceFile,targetTmp) || options.force
+  
+  if is_newer(docFile.sourceFile,target) || options.force % ||
+    %
+    %    is_newer(docFile.sourceFile,targetTmp) || options.force
+    if exist(target)
+      delete(target)
+    end
+    
     if isFunction(docFile)
       text = getFormatedRef(docFile,'outputDir',outputDir);
     else
@@ -292,10 +301,26 @@ for docFile = docFiles
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
   if is_newer(docFile.sourceFile,htmlTarget) || options.force
+    if options.viewoutput
+      pub{end+1} = docFile;
+      view([pub{:}],options,[success false]);
+    end
+    
     try
       %       edit(docFile.targetTemporary)
       html_out = publish(docFile.targetTemporary,options.publishSettings);
       movefile(html_out,htmlTarget);
+      
+      [path,targetName]= fileparts(docFile.targetTemporary);
+      attache = dir(fullfile(outputDir,[targetName '*.*']));
+      
+      for n=1:numel(attache)
+        [p,file,ext] = fileparts(attache(n).name);
+        if ~strcmp(ext,'.m')
+          newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
+          movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
+        end
+      end
       
       success(end+1) = true;
     catch e
@@ -309,12 +334,16 @@ for docFile = docFiles
           docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
         fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
       else
-        rethrow(e)
+        m = e.stack;
+        for k=1:max(numel(m)-6,1)
+          disp(e(k).file)
+        end
+        %                 rethrow(e)
       end
     end
     
     if options.viewoutput
-      pub{end+1} = docFile;
+      %       pub{end+1} = docFile;
       view([pub{:}],options,success);
     else
       disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
