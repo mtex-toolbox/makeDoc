@@ -106,10 +106,10 @@
     <xsl:when test="contains($string, 'script_')">
       <xsl:call-template name="backreplacelink"><xsl:with-param name="string" select="substring-after($string, 'script_')"/></xsl:call-template>
     </xsl:when>    
-    <xsl:when test="contains($string, '_')">
-      <xsl:value-of select="substring-before($string, '_')"/><xsl:text>/</xsl:text>
+    <xsl:when test="contains($string, '__')">
+      <xsl:value-of select="substring-before($string, '__')"/><xsl:text>/</xsl:text>
       <xsl:call-template name="backreplacelink">        
-        <xsl:with-param name="string" select="substring-after($string, '_')"/>
+        <xsl:with-param name="string" select="substring-after($string, '__')"/>
       </xsl:call-template>
     </xsl:when>
     <xsl:otherwise>

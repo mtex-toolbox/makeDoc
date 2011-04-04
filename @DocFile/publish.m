@@ -18,18 +18,14 @@ function [html_out,success] = publish( docFiles, varargin )
 
 options = parseArguments(varargin);
 
-
 prepareFilesToPublish(docFiles,options);
 
 switch options.format
   case 'tex'
     html_out = publishTexBook(docFiles,options);
     
-  case 'html'
-    files = getPublishGeneral();
-    for k=1:numel(files)
-      copyfile(files{k},options.publishSettings.outputDir);
-    end
+  case 'html'    
+    copy(DocFile(getPublishGeneral),options.publishSettings.outputDir);
     
     [html_out,success] = publishFiles(docFiles,options);
 end
@@ -157,23 +153,24 @@ if isempty(dir(outputDir))
 end
 
 n = numel(docFiles);
-progress(0,n,'preparing ')
+% progress(0,n,'preparing ')
+
+
 
 for k = 1:n
-  progress(k,n,'preparing ')
   docFile = docFiles(k);
+  fprintf('preparing %s\n',docFile.sourceInfo.docName);
   %   docFile
   %   docFile
   target = fullfile(tempDir,docFile.targetTemporary);
   targetTmp = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
-  
   if is_newer(docFile.sourceFile,target) || options.force % ||
     %
     %    is_newer(docFile.sourceFile,targetTmp) || options.force
-    if exist(target)
-      delete(target)
-    end
+    %     if exist(target)
+    %       delete(target)
+    %     end
     
     if isFunction(docFile)
       text = getFormatedRef(docFile,'outputDir',outputDir);
@@ -185,6 +182,8 @@ for k = 1:n
     fwrite(fid,text);
     fclose(fid);
   end
+  
+  fprintf('%s',repmat(8,1,numel(docFile.sourceInfo.docName)+11));
 end
 
 
@@ -300,11 +299,13 @@ success = [];
 for docFile = docFiles
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
+  if options.viewoutput
+    pub{end+1} = docFile;
+    view([pub{:}],options,[success false]);
+  end
+  
   if is_newer(docFile.sourceFile,htmlTarget) || options.force
-    if options.viewoutput
-      pub{end+1} = docFile;
-      view([pub{:}],options,[success false]);
-    end
+    
     
     try
       %       edit(docFile.targetTemporary)
@@ -334,20 +335,23 @@ for docFile = docFiles
           docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
         fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
       else
-        m = e.stack;
+        m = e.stack
         for k=1:max(numel(m)-6,1)
-          disp(e(k).file)
+          disp(m(k).file)
         end
         %                 rethrow(e)
       end
     end
     
-    if options.viewoutput
-      %       pub{end+1} = docFile;
-      view([pub{:}],options,success);
-    else
-      disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
-    end
+  else
+    success(end+1) = true;
+  end
+  
+  if options.viewoutput
+    %       pub{end+1} = docFile;
+    view([pub{:}],options,success);
+  else
+    disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
   end
 end
 

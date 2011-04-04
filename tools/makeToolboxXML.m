@@ -62,7 +62,7 @@ if ~isfield(options,'fullname')
 end
 
 if ~isfield(options,'versionname')
-  options.versionname = 'DocHelp 0.1';
+  options.versionname = 'DocHelp 0.1 beta';
 end
 
 if ~isfield(options,'procuctpage')
