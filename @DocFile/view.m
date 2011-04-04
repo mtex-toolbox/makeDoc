@@ -11,7 +11,7 @@ if nargin > 1
     output.outputDir = output.publishSettings.outputDir;
   else
     output.outputDir = options;    
-%     output.publishSettings.outputDir = options;
+    output.publishSettings.outputDir = options;
     output.force = true;
   end
   
@@ -112,11 +112,11 @@ function rePublish(src,evt,list,files,eval,output)
 
 
 pos = get(list,'value');
-output.publishSettings.evalCode = eval;
+output.evalCode = eval;
 [html_out,success] = publish(files(pos),output);
 
 view(files,output);
-set(list,'Value',pos(1))
+set(list,'Value',pos(1));
 % val = get(list,'String');
 % for k=1:numel(success)
 %   if success(k)

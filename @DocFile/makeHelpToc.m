@@ -102,8 +102,9 @@ if isFunction(docFile)
 else
   str = read(docFile);
   
-  titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');
-  titles = regexprep(titles,'\[\[(.*?),(.*?)\]\]','$2'); 
+  m = m2struct(str);  
+%   titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');
+  titles = regexprep({m.title},'\[\[(.*?),(.*?)\]\]','$2'); 
   
   if isempty(titles), titles = {sourceInfo.docName}; end
   
