@@ -159,13 +159,16 @@ n = numel(docFiles);
 
 for k = 1:n
   docFile = docFiles(k);
-  fprintf('preparing %s\n',docFile.sourceInfo.docName);
+  
   %   docFile
   %   docFile
   target = fullfile(tempDir,docFile.targetTemporary);
   targetTmp = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
   
   if is_newer(docFile.sourceFile,target) || options.force % ||
+    
+    fprintf('preparing %s\n',docFile.sourceInfo.docName);
+    
     %
     %    is_newer(docFile.sourceFile,targetTmp) || options.force
     %     if exist(target)
@@ -179,11 +182,15 @@ for k = 1:n
     end
     
     fid = fopen(target,'w');
-    fwrite(fid,text);
-    fclose(fid);
+    if fid > 0
+      fwrite(fid,text);
+      fclose(fid);
+    end
+    
+    fprintf('%s',repmat(8,1,numel(docFile.sourceInfo.docName)+11));
   end
   
-  fprintf('%s',repmat(8,1,numel(docFile.sourceInfo.docName)+11));
+  
 end
 
 
@@ -298,14 +305,13 @@ success = [];
 
 for docFile = docFiles
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
-  
-  if options.viewoutput
-    pub{end+1} = docFile;
-    view([pub{:}],options,[success false]);
-  end
-  
+    
   if is_newer(docFile.sourceFile,htmlTarget) || options.force
     
+    if options.viewoutput
+      pub{end+1} = docFile;
+      view([pub{:}],options,[success false]);
+    end
     
     try
       %       edit(docFile.targetTemporary)
@@ -341,18 +347,14 @@ for docFile = docFiles
         end
         %                 rethrow(e)
       end
+    end  
+    if options.viewoutput
+      %       pub{end+1} = docFile;
+      view([pub{:}],options,success);
+    else
+      disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
     end
-    
-  else
-    success(end+1) = true;
-  end
-  
-  if options.viewoutput
-    %       pub{end+1} = docFile;
-    view([pub{:}],options,success);
-  else
-    disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
-  end
+  end  
 end
 
 cd(oldDir);
