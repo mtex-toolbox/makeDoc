@@ -333,15 +333,15 @@ for docFile = docFiles
     catch e
       success(end+1) = false;
       
-      disp(['Error occured in File: ' docFile.sourceFile ])
-      f = strmatch(docFile.sourceInfo.name,{e.stack.name});
+       disp(['Error occured in while executing: ' docFile.sourceFile ])
+      f = find(strncmp(docFile.targetTemporary,{e.stack.name},length(docFile.targetTemporary)-2));
       if ~isempty(f)
         stack = e.stack(f);
         disp(['   (in file <a href="matlab: opentoline(''' ...
           docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
         fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
       else
-        m = e.stack
+        m = e.stack;
         for k=1:max(numel(m)-6,1)
           disp(m(k).file)
         end
