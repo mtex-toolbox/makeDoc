@@ -94,7 +94,6 @@ function node = createTocNode(dom,parentNode,docFile,options,icon)
 
 sourceInfo = docFile.sourceInfo;
 
-
 if isFunction(docFile)
   node = domAddChild(dom,parentNode,'tocitem', sourceInfo.name,...
     {'target',[sourceInfo.docName '.html'],...
