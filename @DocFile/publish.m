@@ -187,7 +187,7 @@ for k = 1:n
       fclose(fid);
     end
     
-    fprintf('%s',repmat(8,1,numel(docFile.sourceInfo.docName)+11));
+    fprintf('%s',repmat(char(8),1,numel(docFile.sourceInfo.docName)+11));
   end
   
   
