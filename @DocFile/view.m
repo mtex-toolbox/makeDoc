@@ -49,6 +49,7 @@ if nargin > 1
       'Name','DocFiles',... 'Resize','off',...
       'NumberTitle','off',...
       'tag','docFileViewer',...
+      'HandleVisibility','off',...
       'Color',get(0,'defaultUicontrolBackgroundColor'),...
       'Position',[100 100 200 500]);
     
@@ -116,7 +117,7 @@ output.evalCode = eval;
 [html_out,success] = publish(files(pos),output);
 
 view(files,output);
-set(list,'Value',pos(1));
+% set(list,'Value',pos(1));
 % val = get(list,'String');
 % for k=1:numel(success)
 %   if success(k)

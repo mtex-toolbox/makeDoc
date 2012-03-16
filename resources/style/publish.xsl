@@ -127,6 +127,7 @@ Use the XSLT command to perform the conversion.
                     <xsl:variable name="headinglevel">
                       <xsl:choose>
                         <xsl:when test="steptitle[@style = 'document']">h1</xsl:when>
+                        <xsl:when test="substring(steptitle,1,4) = 'SUB:'">h3</xsl:when>
                         <xsl:otherwise>h2</xsl:otherwise>
                       </xsl:choose>
                     </xsl:variable>
@@ -245,11 +246,18 @@ Use the XSLT command to perform the conversion.
         <xsl:for-each select="$body-cells">
           <xsl:if test="./steptitle">   
             <xsl:if test="not(steptitle = 'Contents' or steptitle = 'Abstract' or steptitle = 'See also' or steptitle = 'View Code' or steptitle = 'Open in Editor')"> 
-              
-              <tr ><td>
-                  <a><xsl:attribute name="href">#<xsl:value-of select="position()"/></xsl:attribute><xsl:apply-templates select="steptitle"/></a>
-              </td></tr>
-              
+              <xsl:choose>                
+                <xsl:when test="substring(./steptitle,1,4)='SUB:'">
+                  <tr><td>
+                      <span class="subsection"><a><xsl:attribute name="href">#<xsl:value-of select="position()"/></xsl:attribute><xsl:apply-templates select="steptitle"/></a></span>
+                  </td></tr>
+                </xsl:when>
+                <xsl:otherwise>
+                  <tr><td>
+                      <a><xsl:attribute name="href">#<xsl:value-of select="position()"/></xsl:attribute><xsl:apply-templates select="steptitle"/></a>
+                  </td></tr> 
+                </xsl:otherwise>
+              </xsl:choose>                    
             </xsl:if>
           </xsl:if>
         </xsl:for-each>
@@ -338,10 +346,17 @@ Use the XSLT command to perform the conversion.
     </xsl:call-template>
   </xsl:template>  
   
-  <xsl:template match="steptitle//text()"> 
+  <xsl:template match="steptitle//text()">
     <xsl:call-template name="transformlink">
       <xsl:with-param name="string">
-        <xsl:value-of select="."/>
+        <xsl:choose>
+          <xsl:when test="substring(.,1,4)='SUB:'">
+            <xsl:value-of select="substring-after(.,'SUB:')"/>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:value-of select="."/>
+          </xsl:otherwise>
+        </xsl:choose>
       </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -358,7 +373,7 @@ Use the XSLT command to perform the conversion.
   <!-- Code input and output -->
   
   <xsl:template match="mcode-xmlized">
-    <pre class="codeinput"><xsl:apply-templates/><xsl:text><!-- g162495 --></xsl:text></pre>
+   <pre class="codeinput"><xsl:apply-templates/><xsl:text></xsl:text></pre>
   </xsl:template>
   
   <xsl:template match="mcodeoutput">
@@ -374,7 +389,7 @@ Use the XSLT command to perform the conversion.
   <!-- Figure and model snapshots -->
   
   <xsl:template match="img">
-    <img vspace="5" hspace="5">
+    <img> <!-- vspace="5" hspace="5">-->
       <xsl:attribute name="src">
         <xsl:call-template name="backreplacelinkdot"><xsl:with-param name="string" select="@src"/></xsl:call-template>
         <!--<xsl:value-of select="@src"/>-->

@@ -315,7 +315,14 @@ for docFile = docFiles
     
     try
       %       edit(docFile.targetTemporary)
+      
+      oldFigures = get(0,'children');     
+      
       html_out = publish(docFile.targetTemporary,options.publishSettings);
+      
+      newFigures = get(0,'children');      
+      close(newFigures(~ismember(newFigures,oldFigures)));
+      
       movefile(html_out,htmlTarget);
       
       [path,targetName]= fileparts(docFile.targetTemporary);
