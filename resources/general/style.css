@@ -1,6 +1,6 @@
 body {
   background-color: white;
-  margin: 10px;
+  /*margin: 10px;*/
 }
 
 a {
@@ -19,6 +19,16 @@ a:hover {
 	color:#000066;
 } 
 
+img {
+ margin-left:35px;
+}
+
+p img {
+ margin-left:0px;
+ vertical-align:middle;
+}
+
+
 
 a.blanklink {
   color:#0000FF;
@@ -33,13 +43,21 @@ a.toplink {
 
 h1 {
   color: #990000;
-  font-size: 16pt;
+  font-size: xx-large;
   font-weight:100;
 }
 
 h2 {
   color: #990000;
   font-size: 12pt;/*
+  border-style: solid;
+  border-color: #000000;
+  border-width: 1px 1px 0px 0px;*/
+}
+
+h3 {
+  color: #000000;
+  font-size: 11pt;/*
   border-style: solid;
   border-color: #000000;
   border-width: 1px 1px 0px 0px;*/
@@ -61,19 +79,23 @@ h2.ref {
   color: #990000;
   font-size: large;
 }
+
 h3.ref {
   color: #990000;
 }
 
-h3 {
-  color: #990000;
-	font-size: 11pt;
-}
 
 h3.seealso {
   margin-left:10px;
   margin-bottom:-5px;
 	font-weight: bold;
+}
+
+hr {
+ color:red; 
+background: red;
+ height:15px; 
+width:350px;
 }
 
 
@@ -83,20 +105,33 @@ li {
 
 
 p {
-    margin:10px;
+    /*margin:10px;*/
 }
 
-
+/*
 pre {
   background: #F0F0F0;
-  padding: 10px;
-  margin: 10px;
-}
+  padding: 2px;
+  margin-left: 35px;
+}*/
 
 pre.codeinput {
-  background: #F0F0F0;
-  padding: 10px;
-  margin: 10px;
+  background: #FFFFFF;
+padding:0px;
+margin:0px;
+  margin-left: 35px;
+}
+
+pre.codeoutput {
+  color: #999999;
+  background: #FFFFFF;
+  padding:0px;
+  margin:0px;
+  margin-left: 35px;
+}
+
+pre.error {
+  color: red;
 }
 
 @media print {
@@ -109,17 +144,12 @@ span.string {color: #A020F0}
 span.untermstring {color: #B20000}
 span.syscmd {color: #B28C00}
 
-pre.codeoutput {
-  color: #666666;
-  background: #F9F9F9;
-  padding: 10px;
-  margin: 10px;
-  margin-top: -8px;
+
+span.subsection {
+ margin-left:20px;
+ font-size:small;
 }
 
-pre.error {
-  color: red;
-}
 
 .nav {
   padding:4px ; background: #e1ebfd;

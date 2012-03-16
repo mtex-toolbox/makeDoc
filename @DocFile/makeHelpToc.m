@@ -105,6 +105,11 @@ else
 %   titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');
   titles = regexprep({m.title},'\[\[(.*?),(.*?)\]\]','$2'); 
   
+ hasSub = ~cellfun('isempty',regexpi(titles,'SUB:'));
+ if any(hasSub)
+   titles(hasSub) = {''};
+ end
+  
   if isempty(titles), titles = {sourceInfo.docName}; end
   
   attributes = {'target',[sourceInfo.docName '.html']};
