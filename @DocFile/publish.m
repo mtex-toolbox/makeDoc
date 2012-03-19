@@ -175,10 +175,15 @@ for k = 1:n
     %       delete(target)
     %     end
     
-    if isFunction(docFile)
-      text = getFormatedRef(docFile,'outputDir',outputDir);
-    else
-      text = getFormatedDoc(docFile,docFiles);
+    try
+      if isFunction(docFile)
+        text = getFormatedRef(docFile,'outputDir',outputDir);
+      else
+        text = getFormatedDoc(docFile,docFiles);
+      end
+    catch %#ok<CTCH>
+      disp(['  An error occured preparing ' docFile.sourceInfo.docName])
+      continue
     end
     
     fid = fopen(target,'w');
