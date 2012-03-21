@@ -242,7 +242,11 @@ out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
 
 function out = preSyntax(in,sections,options)
 
-
+% if it is correctly indented then MATLAB 2012a just does the right thing
+if any(strfind(in,'%   '))
+  out = in;
+  return
+end
 
 dom = domCreateDocument('html');
 
@@ -275,7 +279,6 @@ end
 out = dom2char(dom);
 out = regexprep([char(10) char(10) out char(10)],'\n','\n% ');
 % out = out(2:end);
-
 
 function out = preInComment(in,sections,options)
 
