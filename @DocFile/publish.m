@@ -321,7 +321,8 @@ for docFile = docFiles
     try
       %       edit(docFile.targetTemporary)
       
-      oldFigures = get(0,'children');     
+      oldFigures = get(0,'children');
+      evalin('base','clear all')
       
       html_out = publish(docFile.targetTemporary,options.publishSettings);
       
