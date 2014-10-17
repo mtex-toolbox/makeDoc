@@ -1,16 +1,16 @@
 function helpStr = getFormatedRef( file ,varargin)
 % returns a processed string for function file
 %
-%% Input
+% Input
 % file     - current file
 %
-%% Output
+% Output
 % helpString - a string for publishing
 %
-%% Remarks !TODO
+% Remarks !TODO
 % 'input', 'output', 'example', 'see also', 'description', 'syntax', 'view code'
 %
-%% See also
+% See also
 % DocFile/getFormatedDoc DocFile/publish
 
 options = parseArguments(varargin);
@@ -61,8 +61,19 @@ end
 function  sections = help2struct(file,options)
 % struct('title','sectioname','content','descriptive text')
 
-
 helpStr = helpfunc(file.sourceFile);
+
+if isempty(helpStr)
+  process = helpUtils.helpProcess(0,1, {file.sourceFile});
+
+  process.getHelpText;
+  
+  helpStr = process.helpStr;
+  
+end
+
+
+
 docName = file.sourceInfo.docName;
 Title = regexprep(docName,'(\w*)\.(\w*)', ...
   ['$2' char(10) '  \(method of [[$1_index.html,$1]]\)' char(10) ' % ']);
@@ -70,6 +81,12 @@ Title = regexprep(docName,'(\w*)\.(\w*)', ...
 helpStr = [' % ' Title  char(10)  helpStr];
 
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
+
+keyWords = {'Input','Output','Syntax','Options','Flags','See also','Description'};
+for i = 1:numel(keyWords)
+  helpStr =  regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
+end
+
 helpStr = globalReplacements(helpStr,options.outputDir);
 m = m2struct(helpStr);
 

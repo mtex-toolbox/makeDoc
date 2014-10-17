@@ -87,7 +87,9 @@ end
 
 
 
-% if ~isfield(options,'publishSettings')
+if ~isfield(options,'publishSettings')
+  options.publishSettings = struct;
+end
 
 switch options.format
   case {'latex','tex'}
@@ -105,7 +107,7 @@ switch options.format
 end
 
 % end
-options.publishSettings = struct;
+
 options.publishSettings.useNewFigure = true;
 if ~isfield(options.publishSettings,'format')
   options.publishSettings.format = format;
@@ -176,7 +178,7 @@ for k = 1:n
     %     end
     
     try
-      if isFunction(docFile)
+      if isFunction(docFile) || isClass(docFile)
         text = getFormatedRef(docFile,'outputDir',outputDir);
       else
         text = getFormatedDoc(docFile,docFiles);

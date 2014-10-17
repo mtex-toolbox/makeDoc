@@ -1,7 +1,9 @@
 function copy(docFile,destination)
 % copy all docFiles to the given destination folder 
 
-if isempty(dir(destination))
+[~,~,ext] = fileparts(destination);
+
+if isempty(dir(destination)) && isempty(ext)
   mkdir(destination);
 end
 

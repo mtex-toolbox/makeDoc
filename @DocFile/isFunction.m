@@ -19,19 +19,18 @@ if ~isempty(hasKeyword)
   lineBreak = regexp(str,'\n');
   if hasKeyword(1) == 1
     Syntax = str(10:lineBreak(1));
+    isFun = true;
   else
     lastLineBreak = lineBreak(lineBreak<hasKeyword(1));    
     lineTillFuncStr = str(lastLineBreak+1:hasKeyword(1)+7);
     
-    if isempty(strfind(lineTillFuncStr,'%'))
-     nextLineBreak = lineBreak(lineBreak > hasKeyword(1));
-     Syntax = str(hasKeyword(1)+9:nextLineBreak(1));
-    end
+    nextLineBreak = lineBreak(lineBreak > hasKeyword(1));
+    Syntax = str(hasKeyword(1)+9:nextLineBreak(1));
+    if isempty(strfind(lineTillFuncStr,'%')), isFun = true; end
   end
 
   if exist('Syntax','var')
     Syntax = strtrim(Syntax);
-    Syntax = regexprep(Syntax,'varargin','...,param,val,...');    
-    isFun = true;
+    Syntax = regexprep(Syntax,'varargin','''param1'',val1,''param2'',val2');        
   end
 end
