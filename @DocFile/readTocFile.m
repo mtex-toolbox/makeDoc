@@ -1,7 +1,7 @@
 function [tocEntries,tocIcons] = readTocFile(file)
 % read the *.toc of a docFile
 %
-%% Output
+% Output
 % tocEntries  - a cell--array of char with toc--Entries
 % tocIcons    - if an Icon is specified for the toc--Entry
 

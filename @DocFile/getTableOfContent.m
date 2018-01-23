@@ -1,17 +1,15 @@
 function content = getTableOfContent(files , format,dom)
 % produces a summary html-table for given doc-files
 %
-%% Input
-% format - availible formates are
+% Input
+%  format - availible formates are
 %
 %    * |'short'|
 %    * |'toc'|
 %
 
 
-if nargin < 2,
-  format = 'short';
-end
+if nargin < 2, format = 'short'; end
 
 [dom,table] = domCreateDocument('table',{'class','ref','width','90%'});
 

@@ -82,7 +82,7 @@ helpStr = [' % ' Title  char(10)  helpStr];
 
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
 
-keyWords = {'Input','Output','Syntax','Options','Flags','See also','Description'};
+keyWords = {'Input','Output','Syntax','Options','Flags','See also','Description','Example'};
 for i = 1:numel(keyWords)
   helpStr =  regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
 end
@@ -445,9 +445,10 @@ else
   form(end+1).param = param;
   form(end).comment = text;
   
+  % there was some kind of error
   if strcmp(in(nextLineBreak+1:end),in)
-    disp(in)
-    view(options.file)
+    %disp(in)
+    %view(options.file)
     error ('to much -')
   end
   form = format(in(nextLineBreak+1:end),options,form);

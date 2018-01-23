@@ -1,24 +1,26 @@
 function [html_out,success] = publish( docFiles, varargin )
 % publishes the docFiles
 %
-%% Input
-% docFiles - a list of @DocFiles
+% Input
+%  docFiles - a list of @DocFiles
 %
-%% Options
-% mainFile   - start for the toc,
-% outputDir  -
-% evalCode   -
-% force      -
-% viewoutput -
-% format     - html / latex / xml ...
-% publishSettings - struct like [[matlab:doc('publish'),publish]]
+% Options
+%  mainFile   - start for the toc,
+%  outputDir  -
+%  evalCode   -
+%  force      -
+%  viewoutput -
+%  format     - html / latex / xml ...
+%  publishSettings - struct like [[matlab:doc('publish'),publish]]
 %
-%% See also
+% See also
 % DocFile/makeFunctionsReference DocFile/makeHelpToc makeToolboxXML
 
 options = parseArguments(varargin);
 
 prepareFilesToPublish(docFiles,options);
+
+dispPerm(' ');
 
 switch options.format
   case 'tex'
@@ -169,7 +171,7 @@ for k = 1:n
   
   if is_newer(docFile.sourceFile,target) || options.force % ||
     
-    fprintf('preparing %s\n',docFile.sourceInfo.docName);
+    disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
     
     %
     %    is_newer(docFile.sourceFile,targetTmp) || options.force
@@ -184,7 +186,8 @@ for k = 1:n
         text = getFormatedDoc(docFile,docFiles);
       end
     catch %#ok<CTCH>
-      disp(['  An error occured preparing ' docFile.sourceInfo.docName])
+      dispPerm(['  Error preparing <a href="matlab: edit(''' ...
+        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
       continue
     end
     
@@ -194,7 +197,8 @@ for k = 1:n
       fclose(fid);
     end
     
-    fprintf('%s',repmat(char(8),1,numel(docFile.sourceInfo.docName)+11));
+    %fprintf('%s',repmat(char(8),1,numel(docFile.sourceInfo.docName)+11));
+    disptmp('');
   end
   
   
@@ -318,13 +322,15 @@ for docFile = docFiles
     if options.viewoutput
       pub{end+1} = docFile;
       view([pub{:}],options,[success false]);
+    else
+      disptmp([ 'publishing: ' docFile.sourceInfo.docName])
     end
     
     try
       %       edit(docFile.targetTemporary)
       
       oldFigures = get(0,'children');
-      evalin('base','clear all')
+      evalin('base','clear variables')
       
       html_out = publish(docFile.targetTemporary,options.publishSettings);
       
@@ -348,18 +354,20 @@ for docFile = docFiles
     catch e
       success(end+1) = false;
       
-       disp(['Error occured in while executing: ' docFile.sourceFile ])
+      dispPerm(['  Error publishing <a href="matlab: edit(''' ...
+        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+            
       f = find(strncmp(docFile.targetTemporary,{e.stack.name},length(docFile.targetTemporary)-2));
       if ~isempty(f)
         stack = e.stack(f);
-        disp(['   (in file <a href="matlab: opentoline(''' ...
+        dispPerm(['   (in file <a href="matlab: opentoline(''' ...
           docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
         fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
       else
-        m = e.stack;
-        for k=1:max(numel(m)-6,1)
-          disp(m(k).file)
-        end
+        %m = e.stack;
+        %for k=1:max(numel(m)-6,1)
+        %  disp(m(k).file)
+        %end
         %                 rethrow(e)
       end
     end  
@@ -367,7 +375,7 @@ for docFile = docFiles
       %       pub{end+1} = docFile;
       view([pub{:}],options,success);
     else
-      disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
+      %disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
     end
   end  
 end

@@ -26,7 +26,7 @@ if ~isempty(hasKeyword)
     
     nextLineBreak = lineBreak(lineBreak > hasKeyword(1));
     Syntax = str(hasKeyword(1)+9:nextLineBreak(1));
-    if isempty(strfind(lineTillFuncStr,'%')), isFun = true; end
+    if isempty(strfind(lineTillFuncStr,'%%')), isFun = true; end
   end
 
   if exist('Syntax','var')
