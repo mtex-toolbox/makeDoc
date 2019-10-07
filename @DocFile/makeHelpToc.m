@@ -1,16 +1,16 @@
-function [ output_args ] = makeHelpToc(docFiles, mainFile, varargin )
+function makeHelpToc(docFiles, mainFile, varargin )
 % make a toc for a matlab help
-
-%% Input
+%
+% Input
 % docFiles - a list of @DocFile
 % mainFile - the @DocFile of a name of a DocFile where to start, this DocFile should have a *.toc
 %
-%% Options
+% Options
 % outputDir        -  the folder where to put all function--pages
 % FunctionMainFile -  a name of a DocFile, where the Functions pages begin
 % ProductPage      -  the root of the toc starts with this page
 %
-%% See also
+% See also
 % DocFile/makeFunctionsReference DocFile/makeDemoToc DocFile/publish
 
 [options,mainFile,docFiles] = parseArguments(varargin,docFiles,mainFile);
@@ -63,19 +63,25 @@ if ~isfield(options,'ProductPage')
 end
 
 
-function makeToc(dom,parentNode,file,docFiles,options,icon)
+function makeToc(dom,parentNode,file,docFiles,options,Label)
 
-if nargin < 6, icon = ''; end
+if nargin < 6, Label = ''; end
 
+node = createTocNode(dom,parentNode,file,Label);
 
-node = createTocNode(dom,parentNode,file,options,icon);
+if length(file)>1
+  file = file(1);
+  dispPerm(['Warning: The file ' file.sourceInfo.name ' appears twice']);
+end
 
 if hasTocFile(file)  
-  [tocEntries,tocIcons] = readTocFile(file);
+  [tocEntries,tocLabel] = readTocFile(file);
   for k = 1:numel(tocEntries)
     tocFile = getFilesByName(docFiles,tocEntries{k});
-    if ~isempty(tocFile)
-      makeToc(dom,node,getFilesByName(docFiles,tocEntries{k}),docFiles,options,tocIcons{k});
+    if isempty(tocFile)
+      disp([tocEntries{k} ' not found']);
+    else
+      makeToc(dom,node,tocFile,docFiles,options,tocLabel{k});
     end
   end
 elseif strfind(file.sourceInfo.name,'_index')
@@ -90,7 +96,7 @@ elseif strfind(file.sourceInfo.name,'_index')
 end
 
 
-function node = createTocNode(dom,parentNode,docFile,options,icon)
+function node = createTocNode(dom,parentNode,docFile,Label)
 
 sourceInfo = docFile.sourceInfo;
 
@@ -99,39 +105,16 @@ if isFunction(docFile)
     {'target',[sourceInfo.docName '.html'],...
     'image','$toolbox/matlab/icons/help_fx.png'});
 else
-  str = read(docFile);
-  
-  m = m2struct(str);  
-%   titles = regexp(str,'(?<=^%%|\n%%)(.*?)(?=(\n|$))','match');
-  titles = regexprep({m.title},'\[\[(.*?),(.*?)\]\]','$2'); 
-  
- hasSub = ~cellfun('isempty',regexpi(titles,'SUB:'));
- if any(hasSub)
-   titles(hasSub) = {''};
- end
-  
-  if isempty(titles), titles = {sourceInfo.docName}; end
+   
+  if ~isempty(Label)
+    title = Label;
+  else
+    title = fgetl(docFile);          
+  end
+  if isempty(title), title = sourceInfo.docName; end
   
   attributes = {'target',[sourceInfo.docName '.html']};
-  if nargin > 3 &&  ~isempty(icon) 
-    attributes = [attributes,'image',['$toolbox/matlab/icons/' icon '.gif']];
-  end
   
-  node = domAddChild(dom,parentNode,'tocitem', strtrim(titles{1}), attributes);
-    
-  for k=2:numel(titles)
-    title = strtrim(titles{k});
-    if ~isempty(title) && ~strncmp(title,'%',1) && ~badKeyword(title)
-    domAddChild(dom,node,'tocitem', title,...
-      {'target',[sourceInfo.docName '.html#' num2str(k-1)]});
-    end
-  end
+  node = domAddChild(dom,parentNode,'tocitem', strtrim(title), attributes);
+  
 end
-
-
-
-
-
-
-
-% function m2struct(toc,parent,mfile,icon)

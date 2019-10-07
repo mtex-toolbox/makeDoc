@@ -1,14 +1,14 @@
 function func_cat_name = makeFunctionsReference(docFiles,mainFile,varargin)
 % generates the function reference overview pages
 %
-%% Input
+% Input
 % docFiles - a list of @DocFile
 % mainFile - the @DocFile of a name of a DocFile where to start, this DocFile should have a *.toc
 %
-%% Options
+% Options
 % outputDir   -  the folder where to put all function--pages
 %
-%% See also
+% See also
 % DocFile/publish DocFile/makeHelpToc
 
 
@@ -21,7 +21,7 @@ options.docFiles = docFiles;
 [dom,document] = domCreateDocument('mscript');
 makeFuncCategory(dom,document,mainFile,options);
 
-  insertRefSwitch(dom,'>> Alphabetical List',options.func_alph_name);
+insertRefSwitch(dom,'>> Alphabetical List',options.func_alph_name);
 
 xslt(dom,getPublishStyle('html'),fullfile(options.outputDir,options.func_cat_name));
 
@@ -29,7 +29,7 @@ xslt(dom,getPublishStyle('html'),fullfile(options.outputDir,options.func_cat_nam
 [dom,document] = domCreateDocument('mscript');
 makeFuncAlphabetic(dom,document,options);
 
-  insertRefSwitch(dom,'>> Categorial List',options.func_cat_name);
+insertRefSwitch(dom,'>> Categorial List',options.func_cat_name);
   
 xslt(dom,getPublishStyle('html'),fullfile(options.outputDir ,options.func_alph_name));
 
@@ -38,6 +38,8 @@ xslt(dom,getPublishStyle('html'),fullfile(options.outputDir ,options.func_alph_n
 files = getPublishGeneral();
 for k=1:numel(files)
   copyfile(files{k},options.outputDir);
+end
+
 end
 
 function [options,mainFile] = parseArguments(options,docFiles,mainFile)
@@ -57,6 +59,7 @@ if ~isa(mainFile,'DocFile')
   mainFile = getFilesByName(docFiles,mainFile);
 end
 
+end
 
 function insertRefSwitch(dom,linkename,linkpage)
 
@@ -66,6 +69,7 @@ div.setAttribute('class','funcrefpage');
 text.insertBefore(div,text.getFirstChild);
 domAddChild(dom,div,'a',linkename,{'href',linkpage});
 
+end
 
 function count = makeFuncAlphabetic(dom,parentNode,options)
 
@@ -117,25 +121,24 @@ for k=1:numel(sects)-1
   table = domAddChild(dom,text,'table',[],{'width','95%'});
   for l=sects(k)+1:sects(k+1)
     if isFunction(docFiles(l))
-      content = getShortDescription(docFiles(l));
-      
+            
       tr = domAddChild(dom,table,'tr');
       td = domAddChild(dom,table,'td',[],{'width','250px'});
-      a = domAddChild(dom,td,'a',[],{'href',content.href});
-      domAddChild(dom,a,'tt', content.title);
+      a = domAddChild(dom,td,'a',[],{'href',[docFiles(l).sourceInfo.docName '.html']});
+      domAddChild(dom,a,'tt', docFiles(l).sourceInfo.name);
       
       docName = docFiles(l).sourceInfo.docName;
       p = strfind(docName,'.');
       if ~isempty(p)
         domAddChild(dom,td,'span',['   ('  docName(1:p-1) ')']);
       end
-      
-      td = domAddChild(dom,table,'td',content.summary);
+            
     end
   end
   
 end
 
+end
 
 function count = makeFuncCategory(dom,parentNode,file,options,count)
 % apply recursive by read from tocfile
@@ -180,10 +183,9 @@ if numel(icount)>1
   end  
 end
 
-
+end
 
 %  
-
 
 
 function count = createMscriptCell(dom,parentNode,file,options,count)
@@ -231,34 +233,17 @@ if strfind(file.sourceInfo.name,'_index')
   %   file
   table = domAddChild(dom,text,'table',[],{'width','95%'});
   for tocFiles = options.docFiles(match)
-    content = getShortDescription(tocFiles);
-    
+     
     tr = domAddChild(dom,table,'tr');
     td = domAddChild(dom,table,'td',[],{'width','250px'});
-    a = domAddChild(dom,td,'a',[],{'href',content.href});
-    domAddChild(dom,a,'tt', content.title);
-    td = domAddChild(dom,table,'td',content.summary);
+    a = domAddChild(dom,td,'a',[],{'href',[tocFiles.sourceInfo.docName '.html']});
+    domAddChild(dom,a,'tt', tocFiles.sourceInfo.name);
+   
   end
 end
 
 domAddChild(dom,cell,'cellOutputTarget',num2str(count));
 
 
-
-
-function content = getShortDescription(docFile)
-
-text = helpfunc(docFile.sourceFile);
-
-endPattern = '(?=\n %|\n[ ]*\n[ ]*|\n[ ]*$)';
-text = regexp(text,['(.*?)' endPattern],'match');
-if ~isempty(text)
-  summary = regexprep(strtrim(text{1}),'^[ ]*|\n[ ]*',' ');
-else
-  summary = '';
 end
-
-content.title = docFile.sourceInfo.name;
-content.href = [docFile.sourceInfo.docName '.html'];
-content.summary = summary;
 

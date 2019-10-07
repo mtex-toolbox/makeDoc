@@ -53,7 +53,10 @@ function content = getShortDescription(docFile)
 [ifun] = isFunction(docFile);
 
 if ifun
-  text = helpfunc(docFile.sourceFile);
+  %text = helpfunc(docFile.sourceFile);
+  process = helpUtils.helpProcess(1, 1, {file.sourceFile});
+  process.getHelpText;
+  text = process.helpStr;
   
   endPattern = '(?=\n %|\n[ ]*\n[ ]*|\n[ ]*$)';
   text = regexp(text,['(.*?)' endPattern],'match');

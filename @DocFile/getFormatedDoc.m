@@ -19,27 +19,27 @@ else
 end
 % helpStr = regexprep(helpStr,'_','\\\_');
 
-if hasTocFile(file)
-  
-  tocFiles = getFilesByToc(file,docFiles);
-  
-  if numel(tocFiles)>0
-    tocContent = getTableOfContent(tocFiles,'toc');
-    
-    htmlTable = regexprep(['%% ' char([10 10]) '<html>' char(10) tocContent char(10) '</html>' char(10)],'\n','\n% ');   
-    
-    ipos = regexp(helpStr,'\n%%|\n$','start');
-    
-    if ~isempty(ipos)
-      helpStr = [helpStr(1:ipos) ...
-        htmlTable ...
-        helpStr(ipos:end)];
-    else
-      helpStr = [helpStr char(10) htmlTable];
-    end
-    
-  end
-end
+% if hasTocFile(file)
+%   
+%   tocFiles = getFilesByToc(file,docFiles);
+%   
+%   if numel(tocFiles)>0
+%     tocContent = getTableOfContent(tocFiles,'toc');
+%     
+%     htmlTable = regexprep(['%% ' char([10 10]) '<html>' newline tocContent newline '</html>' newline],'\n','\n% ');   
+%     
+%     ipos = regexp(helpStr,'\n%%|\n$','start');
+%     
+%     if ~isempty(ipos)
+%       helpStr = [helpStr(1:ipos) ...
+%         htmlTable ...
+%         helpStr(ipos:end)];
+%     else
+%       helpStr = [helpStr char(10) htmlTable];
+%     end
+%     
+%   end
+% end
 
 
 

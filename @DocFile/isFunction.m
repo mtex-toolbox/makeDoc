@@ -1,12 +1,12 @@
 function [isFun,Syntax] = isFunction(file)
 % checks whether docFile is a function or a script file
 %
-%% Input
-% file   - a @DocFile
+% Input
+%  file   - a @DocFile
 %
-%% Output
-% isFun  - |true| / |false| 
-% Syntax - if a function, get the Syntax of the Function
+% Output
+%  isFun  - |true| / |false| 
+%  Syntax - if a function, get the Syntax of the Function
 
 str = read(file);
 % expect the first function string to be syntax and not comment ?!
@@ -26,11 +26,10 @@ if ~isempty(hasKeyword)
     
     nextLineBreak = lineBreak(lineBreak > hasKeyword(1));
     Syntax = str(hasKeyword(1)+9:nextLineBreak(1));
-    if isempty(strfind(lineTillFuncStr,'%%')), isFun = true; end
+    if ~contains(lineTillFuncStr,'%%'), isFun = true; end
   end
 
-  if exist('Syntax','var')
-    Syntax = strtrim(Syntax);
-    Syntax = regexprep(Syntax,'varargin','''param1'',val1,''param2'',val2');        
-  end
+  if exist('Syntax','var'), Syntax = ['%   ' strtrim(Syntax)]; end
+else
+  Syntax = [];
 end

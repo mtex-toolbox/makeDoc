@@ -8,4 +8,3 @@ if ~hasToc
   tocLocation = '';
 end
 
-

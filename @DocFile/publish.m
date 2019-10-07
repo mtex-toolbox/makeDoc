@@ -5,37 +5,120 @@ function [html_out,success] = publish( docFiles, varargin )
 %  docFiles - a list of @DocFiles
 %
 % Options
-%  mainFile   - start for the toc,
 %  outputDir  -
 %  evalCode   -
 %  force      -
-%  viewoutput -
-%  format     - html / latex / xml ...
-%  publishSettings - struct like [[matlab:doc('publish'),publish]]
+%  publishSettings - struct like <matlab:doc('publish') publish>
 %
 % See also
 % DocFile/makeFunctionsReference DocFile/makeHelpToc makeToolboxXML
 
 options = parseArguments(varargin);
 
-prepareFilesToPublish(docFiles,options);
+tempDir = options.tempDir;
+if isempty(dir(tempDir)), mkdir(tempDir); end
 
-dispPerm(' ');
+outputDir = options.publishSettings.outputDir;
+if isempty(dir(outputDir)), mkdir(outputDir); end
 
-switch options.format
-  case 'tex'
-    html_out = publishTexBook(docFiles,options);
+%% prepare files to publish
+for docFile = docFiles
+  
+  target = fullfile(tempDir,docFile.targetTemporary);
     
-  case 'html'    
-    copy(DocFile(getPublishGeneral),options.publishSettings.outputDir);
+  if fileIsNewer(docFile.sourceFile,target) || options.force % ||
     
-    [html_out,success] = publishFiles(docFiles,options);
+    disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
+          
+    try
+      if isFunction(docFile) || isClass(docFile)
+        text = getFormatedRef(docFile,'outputDir',outputDir);
+      else
+        text = getFormatedDoc(docFile,docFiles);
+      end
+    catch %#ok<CTCH>
+      dispPerm(['  Error preparing <a href="matlab: edit(''' ...
+        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+      lasterr
+      disp(' ');
+      continue
+    end
+    
+    fid = fopen(target,'w');
+    if fid > 0
+      fwrite(fid,text);
+      fclose(fid);
+    end
+    
+    disptmp('');
+  end
 end
 
+% finished script generation
+dispPerm(' ');
 
+copy(DocFile(getPublishGeneral),options.publishSettings.outputDir);
 
-% viewOutput(html_out,options);
+options.publishSettings.catchError = false;
 
+% change directory
+oldDir = cd; cd(tempDir);
+
+%% publish files
+for docFile = docFiles
+  
+  % final html name with script_xxx_xxx
+  htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
+
+  % nothing to do
+  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force, continue; end
+    
+  disptmp([ 'publishing: ' docFile.sourceInfo.docName])
+  try
+          
+    evalin('base','clear variables'); close all;
+    
+    html_out = publish(docFile.targetTemporary,options.publishSettings);
+            
+    movefile(html_out,htmlTarget);
+      
+    [~,targetName] = fileparts(html_out);
+    
+    % crop all images
+    unix(['mogrify -trim ' outputDir filesep targetName '*.png']);
+    
+    attache = dir(fullfile(outputDir,[targetName '*.*']));
+    % use mogrify -trim *.png here to crop images
+      
+    for n=1:numel(attache)      
+      newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
+      movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
+    end    
+    
+  catch e
+    
+    success = false;
+    
+    % remove 
+    delete([outputDir filesep 'script_*']) 
+      
+    dispPerm(['  Error publishing <a href="matlab: edit(''' ...
+      docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+            
+    f = find(strncmp(docFile.targetTemporary,{e.stack.name},length(docFile.targetTemporary)-2));
+    if ~isempty(f)
+      stack = e.stack(f);
+      dispPerm(['   (in file <a href="matlab: opentoline(''' ...
+        docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
+      fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
+    end
+  end
+
+end
+
+cd(oldDir);
+
+end
 
 function options = parseArguments(options)
 
@@ -54,17 +137,11 @@ if ~isfield(options,'force')
   options.force = false;
 end
 
-if ~isfield(options,'mainFile')
-  options.mainFile = false;
-end
 
 if ~isfield(options,'format')
   options.format = 'html';
 end
 
-if ~isfield(options,'viewoutput')
-  options.viewoutput = true;
-end
 
 if ~isfield(options,'force')
   options.viewoutput = false;
@@ -78,26 +155,16 @@ if ~isfield(options,'tempDir')
   options.tempDir = options.outputDir;
 end
 
-
 if ~isfield(options,'evalCode')
   options.evalCode = false;
 end
-
-if ~isfield(options,'documentClass')
-  options.documentClass = 'article';
-end
-
 
 
 if ~isfield(options,'publishSettings')
   options.publishSettings = struct;
 end
 
-switch options.format
-  case {'latex','tex'}
-    format = 'xml';
-    style = 'latex';
-    imageFormat = 'epsc2';
+switch options.format 
   case {'html','jar','help'}
     format = 'html';
     style = 'html';
@@ -141,278 +208,6 @@ end
 
 options = rmfield(options,{'outputDir','evalCode'});
 
-
-
-function prepareFilesToPublish(docFiles,options)
-
-tempDir = options.tempDir;
-outputDir = options.publishSettings.outputDir;
-
-if isempty(dir(tempDir))
-  mkdir(tempDir);
-end
-
-if isempty(dir(outputDir))
-  mkdir(outputDir);
-end
-
-n = numel(docFiles);
-% progress(0,n,'preparing ')
-
-
-
-for k = 1:n
-  docFile = docFiles(k);
-  
-  %   docFile
-  %   docFile
-  target = fullfile(tempDir,docFile.targetTemporary);
-  targetTmp = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
-  
-  if is_newer(docFile.sourceFile,target) || options.force % ||
-    
-    disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
-    
-    %
-    %    is_newer(docFile.sourceFile,targetTmp) || options.force
-    %     if exist(target)
-    %       delete(target)
-    %     end
-    
-    try
-      if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile,'outputDir',outputDir);
-      else
-        text = getFormatedDoc(docFile,docFiles);
-      end
-    catch %#ok<CTCH>
-      dispPerm(['  Error preparing <a href="matlab: edit(''' ...
-        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-      continue
-    end
-    
-    fid = fopen(target,'w');
-    if fid > 0
-      fwrite(fid,text);
-      fclose(fid);
-    end
-    
-    %fprintf('%s',repmat(char(8),1,numel(docFile.sourceInfo.docName)+11));
-    disptmp('');
-  end
-  
-  
 end
 
 
-
-function html_out = publishTexBook(docFiles,options)
-
-
-% return
-
-
-% if ~isempty(options.mainFile)
-% mainDocFile = getFilesByName(docFiles,options.mainFile);
-% if isempty(mainDocFile)
-%   options.mainDocFile = docFiles(1);
-% else
-%   options.mainDocFile = mainDocFile;
-% end
-%   mainDocFile.targetFile = regexprep(mainDocFile.targetFile,'\.html','\.tex');
-% else
-%   error(['main file ''' varargin{k+1} ''' not found'])
-% end
-
-% struct(mainDocFile).targetFile
-
-% options.publishSettings = publishSettings;
-
-
-if ~hasTocFile(options.mainDocFile)
-  options.documentclass = 'article';
-end
-
-dom = domCreateDocument(options.documentclass);
-doc = dom.getDocumentElement;
-
-makeTexSection(dom,doc,options.mainDocFile,docFiles,options);
-% xmlwrite(dom)
-xmlwrite('out.xml',dom);
-stylesheet = getPublishStyle('latex');
-html_out = xslt(dom,stylesheet,options.mainDocFile.targetFile);
-
-
-
-function makeTexSection(dom,parentNode,file,docFiles,options)
-
-node = publishXML(dom,parentNode,file,options);
-
-% if hasTocFile(file)
-%   for tocFiles = getFilesByToc(file,docFiles)
-%     makeTexSection(dom,node,tocFiles,docFiles,options);
-%   end
-% end
-if hasTocFile(file)
-  for tocFiles = getFilesByToc(file,docFiles)
-    makeTexSection(dom,node,tocFiles,docFiles,options);
-  end
-elseif strfind(file.sourceInfo.name,'_index')
-  nam = file.sourceInfo.name(1:end-6);
-  
-  info = [docFiles.sourceInfo];
-  match = ~cellfun('isempty',regexp({info.path}, [nam '$']));
-  
-  for tocFiles = docFiles(match)
-    makeTexSection(dom,node,tocFiles,docFiles,options);
-  end
-end
-
-
-function node = publishXML(dom,parentNode,file,options)
-
-
-pOptions = options.publishSettings;
-
-target = regexprep(file.targetTemporary,'\.m|\.tex|\.html','\.xml');
-
-
-if is_newer(file.sourceFile,target)  || options.force
-  if pOptions.evalCode
-    oldDir = cd;
-    cd(pOptions.outputDir);
-  end
-  
-  target = publish(file.targetTemporary,pOptions);
-  
-  
-  if pOptions.evalCode
-    cd(oldDir)
-  end
-end
-% target
-
-domnode = xmlread(target);
-if file.sourceInfo.isFunction
-  node = domAddChild(dom,parentNode,'function');
-else
-  node = domAddChild(dom,parentNode,'section');
-end
-copynode = dom.importNode(domnode.getDocumentElement,true);
-node.appendChild(copynode);
-
-
-function [htmlTarget,success] = publishFiles(docFiles,options)
-
-tempDir = options.tempDir;
-outputDir = options.publishSettings.outputDir;
-options.publishSettings.catchError = false;
-
-oldDir = cd; cd(tempDir);
-% cd
-
-pub = {};
-success = [];
-
-for docFile = docFiles
-  htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
-    
-  if is_newer(docFile.sourceFile,htmlTarget) || options.force
-    
-    if options.viewoutput
-      pub{end+1} = docFile;
-      view([pub{:}],options,[success false]);
-    else
-      disptmp([ 'publishing: ' docFile.sourceInfo.docName])
-    end
-    
-    try
-      %       edit(docFile.targetTemporary)
-      
-      oldFigures = get(0,'children');
-      evalin('base','clear variables')
-      
-      html_out = publish(docFile.targetTemporary,options.publishSettings);
-      
-      newFigures = get(0,'children');      
-      close(newFigures(~ismember(newFigures,oldFigures)));
-      
-      movefile(html_out,htmlTarget);
-      
-      [path,targetName]= fileparts(docFile.targetTemporary);
-      attache = dir(fullfile(outputDir,[targetName '*.*']));
-      
-      for n=1:numel(attache)
-        [p,file,ext] = fileparts(attache(n).name);
-        if ~strcmp(ext,'.m')
-          newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
-          movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
-        end
-      end
-      
-      success(end+1) = true;
-    catch e
-      success(end+1) = false;
-      
-      dispPerm(['  Error publishing <a href="matlab: edit(''' ...
-        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-            
-      f = find(strncmp(docFile.targetTemporary,{e.stack.name},length(docFile.targetTemporary)-2));
-      if ~isempty(f)
-        stack = e.stack(f);
-        dispPerm(['   (in file <a href="matlab: opentoline(''' ...
-          docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
-        fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
-      else
-        %m = e.stack;
-        %for k=1:max(numel(m)-6,1)
-        %  disp(m(k).file)
-        %end
-        %                 rethrow(e)
-      end
-    end  
-    if options.viewoutput
-      %       pub{end+1} = docFile;
-      view([pub{:}],options,success);
-    else
-      %disp( ['<a href="' htmlTarget '">' docFile.sourceInfo.docName '</a>']);
-    end
-  end  
-end
-
-cd(oldDir);
-
-
-function viewOutput(html_out,options)
-
-if options.viewoutput
-  switch options.format
-    case 'html'
-      web(html_out)
-    case {'tex','latex'}
-      html_out = fullfile(regexprep(html_out,'file:///',''));
-      [path] = fileparts(html_out);
-      
-      disp('running latex ...')
-      [a,b] = system(['pdflatex -interaction=nonstopmode -output-directory=' path ' '  html_out]);
-      %       disp('second run ...')
-      %       [a,b] = system(['pdflatex -interaction=nonstopmode -output-directory=' path ' ' html_out]);
-      %       disp('third run ...')
-      %       [a,b] = system(['pdflatex -interaction=nonstopmode -output-directory=' path ' ' html_out]);
-      %
-      file = regexprep(html_out,'\.tex','\.pdf');
-      open(file);
-  end
-end
-
-
-
-function o = is_newer(f1,f2)
-% is f2 newer than f1
-d1 = dir(f1);
-d2 = dir(f2);
-if ~isempty(d1) && ~isempty(d2)
-  o = (d1.datenum > d2.datenum);
-else
-  o = true;
-end
