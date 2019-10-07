@@ -1,8 +1,11 @@
 function s = helpfunc2struct(folder)
 
 [~, fold] = fileparts(folder);
-helpStr = helpfunc(folder);
-      
+
+process = helpUtils.helpProcess(1, 1, {folder});
+process.getHelpText;
+helpStr = process.helpStr;
+
 tokens = regexp(helpStr,'([^\n]*)','tokens');
 tokens = vertcat(tokens{2:end});
 if isempty(tokens)
