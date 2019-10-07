@@ -22,7 +22,7 @@ function outstr = makeClassLinks(instr)
 for k=numel(start):-1:1
   fhandle = instr(start(k)+1:stop(k));
   if numel(regexp(which(fhandle),fhandle))>1
-    instr =  [instr(1:start(k)-1) '[[' fhandle '_index.html,' fhandle ']]' instr(stop(k)+1:end)];
+    instr =  [instr(1:start(k)-1) '<' fhandle '_index.html ' fhandle '>' instr(stop(k)+1:end)];
   else
     %     foo = which(fhandle);
     %     if ~isempty(foo)
@@ -37,10 +37,8 @@ outstr = instr;
 function outstr = makeTable(instr,outputDir)
 lineBreak = regexp(instr,'\n');
 
-
 [dom,doc] = domCreateDocument('html');
 table = domAddChild(dom,doc,'table',[],{'class','usertable'});
-
 
 tableMarker = regexp(instr,'\|\|');
 oldRowBreak = [];
@@ -65,7 +63,7 @@ while ~isempty(tableMarker)
       tr = domAddChild(dom,table,'tr');
       for col=1:numel(row)-1
         text = strtrim(instr(row(col)+2:row(col+1)-1));
-        text = tmpPublish(  ['%% ' char(10) '% ' text],outputDir);
+        text = tmpPublish(  ['%% ' newline '% ' text],outputDir);
         
         td = domAddChild(dom,tr,'td');
         newNode = dom.importNode(text,true);
@@ -101,13 +99,6 @@ while ~isempty(tableMarker)
   end
   
 end
-
-
-
-
-
-
-
 
 
 % while ~isempty(tableMarker) %%&& k < numel(tableMarker)
