@@ -37,6 +37,7 @@ for docFile = docFiles
         text = getFormatedDoc(docFile,docFiles);
       end
     catch %#ok<CTCH>
+      %disptmp(newline);
       dispPerm(['  Error preparing <a href="matlab: edit(''' ...
         docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
       lasterr
@@ -64,8 +65,14 @@ options.publishSettings.catchError = false;
 % change directory
 oldDir = cd; cd(tempDir);
 
+% 
+settings = getappdata(0,'mtex');
+
 %% publish files
 for docFile = docFiles
+  
+  % reapply settings
+  setappdata(0,'mtex',settings);
   
   % final html name with script_xxx_xxx
   htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
@@ -85,7 +92,10 @@ for docFile = docFiles
     [~,targetName] = fileparts(html_out);
     
     % crop all images
-    unix(['mogrify -trim ' outputDir filesep targetName '*.png']);
+    pngTarget = fullfile(outputDir,targetName,'*.png');
+    if ~isempty(dir(pngTarget))
+      unix(['mogrify -trim ' pngTarget]);
+    end
     
     attache = dir(fullfile(outputDir,[targetName '*.*']));
     % use mogrify -trim *.png here to crop images
@@ -101,7 +111,7 @@ for docFile = docFiles
     
     % remove 
     delete([outputDir filesep 'script_*']) 
-      
+    %disptmp('');
     dispPerm(['  Error publishing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
             
@@ -112,6 +122,7 @@ for docFile = docFiles
         docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
       fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
     end
+    
   end
 
 end
