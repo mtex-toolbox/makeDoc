@@ -40,7 +40,7 @@ lineBreak = regexp(instr,'\n');
 [dom,doc] = domCreateDocument('html');
 table = domAddChild(dom,doc,'table',[],{'class','usertable'});
 
-tableMarker = regexp(instr,'\|\|');
+tableMarker = regexp(instr,' \|\| ');
 oldRowBreak = [];
 while ~isempty(tableMarker)
   beforeLineBreak = max(lineBreak(lineBreak<tableMarker(1)));
