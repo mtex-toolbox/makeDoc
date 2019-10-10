@@ -2,13 +2,13 @@ function makeHelpToc(docFiles, mainFile, varargin )
 % make a toc for a matlab help
 %
 % Input
-% docFiles - a list of @DocFile
-% mainFile - the @DocFile of a name of a DocFile where to start, this DocFile should have a *.toc
+%  docFiles - a list of @DocFile
+%  mainFile - the @DocFile of a name of a DocFile where to start, this DocFile should have a *.toc
 %
 % Options
-% outputDir        -  the folder where to put all function--pages
-% FunctionMainFile -  a name of a DocFile, where the Functions pages begin
-% ProductPage      -  the root of the toc starts with this page
+%  outputDir        -  the folder where to put all function--pages
+%  FunctionMainFile -  a name of a DocFile, where the Functions pages begin
+%  ProductPage      -  the root of the toc starts with this page
 %
 % See also
 % DocFile/makeFunctionsReference DocFile/makeDemoToc DocFile/publish
@@ -102,8 +102,7 @@ sourceInfo = docFile.sourceInfo;
 
 if isFunction(docFile)
   node = domAddChild(dom,parentNode,'tocitem', sourceInfo.name,...
-    {'target',[sourceInfo.docName '.html'],...
-    'image','$toolbox/matlab/icons/help_fx.png'});
+    {'target',[sourceInfo.docName '.html']});
 else
    
   if ~isempty(Label)
