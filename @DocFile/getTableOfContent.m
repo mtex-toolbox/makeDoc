@@ -71,10 +71,16 @@ if ifun
 else
   text = read(docFile);
   content = regexp(text,'^%%(?<title>.*?)\n(?<text>.*?)(?=%%|$)','names');
-  content.text = strtrim(regexprep(content.text,'%',''));
   
-  % somehow xsl link transformation fails
-  content.title = regexprep(content.title,'\[\[(.*?),(.*?)\]\]','$2');
+  if isempty(content)
+    content(1).text = 'Text missing';
+    content(1).title = 'Title missing';
+  else
+    content.text = strtrim(regexprep(content.text,'%',''));
+  
+    % somehow xsl link transformation fails
+    content.title = regexprep(content.title,'\[\[(.*?),(.*?)\]\]','$2');
+  end
 end
 
 
