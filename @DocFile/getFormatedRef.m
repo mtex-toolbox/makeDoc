@@ -13,6 +13,8 @@ function helpStr = getFormatedRef( docFile ,varargin)
 % See also
 % DocFile/getFormatedDoc DocFile/publish
 
+keyWords = {'Description','Syntax','Input','Output','Options','Flags',...
+  'Class Properties','Dependent Class Properties','Derived Classes','See also','Example'};
 sections = help2struct(docFile);
 
 if ~isempty(sections)
@@ -27,22 +29,18 @@ if ~isempty(sections)
   if ~isNew && isFunc
     content = [addTitle(content,'Syntax') newline preSyntax(Syntax,sections)];
   end
-  content = addContentByTopic(content,sections,'Input',@preVarComment);
-  content = addContentByTopic(content,sections,'Options',@preVarComment);
-  content = addContentByTopic(content,sections,'Flags',@preVarComment);
-  content = addContentByTopic(content,sections,'Output',@preVarComment);
+    
+  for top = keyWords(3:9)
+    content = addContentByTopic(content,sections,top{1},@preVarComment);
+  end
+  
   content = addContentByTopic(content,sections,'Remarks',@inline);
   content = addContentByTopic(content,sections,'Example',@pre);
-  content = addContentByTopic(content,sections,'See also',@inline);
+  content = addContentByTopic(content,sections,'See also',@seeAlso);
   helpStr = content;
 else
   helpStr = 'error';
 end
-
-
-% helpStr
-
-
 
 function  sections = help2struct(file)
 % struct('title','sectioname','content','descriptive text')
@@ -69,7 +67,6 @@ helpStr = [' % ' Title  newline  helpStr];
 
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
 
-keyWords = {'Input','Output','Syntax','Options','Flags','See also','Description','Example'};
 for i = 1:numel(keyWords)
   helpStr =  regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
 end
@@ -141,14 +138,16 @@ end
 
 
 % ------------------------------------------------------------
-function out = inline(in,varargin)
+  function out = seeAlso(in,varargin)    
+    out = regexprep(inline(in),'([\w\.s]*)','<$1.html $1>');
+    out = regexprep(out,'\n\n','\n%');
+  end
 
-out = subText(in,1,numel(in));
-
-% out = regexprep([newline '% ' out],'\n%[ ]*','\n% ');
-out = regexprep(out,'\n\n','\n%');
-
-end
+  function out = inline(in,varargin)  
+    out = subText(in,1,numel(in));
+    % out = regexprep([newline '% ' out],'\n%[ ]*','\n% ');
+    out = regexprep(out,'\n\n','\n%');
+  end
 
 function out = pre(in,varargin)
 
@@ -208,7 +207,7 @@ for k=1:numel(varComment)
   try
     row = domAddChild(dom,table,'tr');
     td = domAddChild(dom,row,'td',[],{'width','100px'});
-    domAddChild(dom,td,'tt',strtrim(varComment{k}{1}));
+    domAddChild(dom,td,'tt',makeLinks(varComment{k}{1}));
   
     td = domAddChild(dom,row,'td');
     domAddChild(dom,td,'tt',makeLinks(varComment{k}{2}));
@@ -237,6 +236,7 @@ end
 
 function out = makeLinks(in)
 out = strtrim(regexprep(in,'<([^\ ]+)\ ([^>]+)>','<a href="$1">$2</a>'));
+%out = strtrim(in);
 end
 
 end
