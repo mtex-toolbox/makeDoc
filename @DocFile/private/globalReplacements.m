@@ -40,7 +40,7 @@ lineBreak = regexp(instr,'\n');
 [dom,doc] = domCreateDocument('html');
 table = domAddChild(dom,doc,'table',[],{'class','usertable'});
 
-tableMarker = regexp(instr,' \|\| ');
+tableMarker = regexp(instr,' \|\|\s')+1;
 oldRowBreak = [];
 while ~isempty(tableMarker)
   beforeLineBreak = max(lineBreak(lineBreak<tableMarker(1)));
@@ -82,7 +82,7 @@ while ~isempty(tableMarker)
     if newRowBreak  > afterLineBreak || isempty(tableMarker)
       newTable = dom2char(dom);
       imark =  ['%' repmat(' ' ,1,intend)];
-      newTable = regexprep([imark char(10) newTable char(10) ],'\n',['\n' imark]);
+      newTable = regexprep([imark newline newTable newline ],'\n',['\n' imark]);
       
       instr =  [instr(1:oldRowBreak)  newTable instr(afterLineBreak:end)];
       
