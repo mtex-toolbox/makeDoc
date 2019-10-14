@@ -91,7 +91,14 @@ elseif strfind(file.sourceInfo.name,'_index')
   match = ~cellfun('isempty',regexp({info.path}, [nam '$']));
   
   for tocFiles = docFiles(match)
-    makeToc(dom,node,tocFiles,docFiles,options);
+    if strcmp(tocFiles.sourceInfo.name, nam)
+      makeToc(dom,node,tocFiles,docFiles,options);
+    end
+  end
+  for tocFiles = docFiles(match)
+    if ~strcmp(tocFiles.sourceInfo.name, nam)
+      makeToc(dom,node,tocFiles,docFiles,options);
+    end
   end
 end
 
