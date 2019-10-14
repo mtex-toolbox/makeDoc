@@ -91,18 +91,18 @@ for docFile = docFiles
       
     [~,targetName] = fileparts(html_out);
     
-    % crop all images
-    pngTarget = fullfile(outputDir,targetName,'*.png');
-    if ~isempty(dir(pngTarget))
-      unix(['mogrify -trim ' pngTarget]);
-    end
+    if 1
+      % crop all images
+      pngTarget = fullfile(outputDir,targetName,'*.png');
+      if ~isempty(dir(pngTarget))
+        unix(['mogrify -trim ' pngTarget]);
+      end
     
-    attache = dir(fullfile(outputDir,[targetName '*.*']));
-    % use mogrify -trim *.png here to crop images
-      
-    for n=1:numel(attache)      
-      newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
-      movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
+      attache = dir(fullfile(outputDir,[targetName '*.*']));
+      for n=1:numel(attache)
+        newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
+        movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
+      end
     end    
     
   catch e
