@@ -60,8 +60,9 @@ if isempty(helpStr)
 end
 
 docName = file.sourceInfo.docName;
-Title = regexprep(docName,'(\w*)\.(\w*)', ...
-  ['$2' newline '  \(method of <$1_index.html $1>\)' newline ' % ']);
+%Title = regexprep(docName,'(\w*)\.(\w*)', ...
+%  ['$2' newline '  \(method of <$1_index.html $1>\)' newline ' % ']);
+Title = regexprep(docName,'(\w*)\.(\w*)', ['$2' newline ' % ']);
 
 helpStr = [' % ' Title  newline  helpStr];
 
