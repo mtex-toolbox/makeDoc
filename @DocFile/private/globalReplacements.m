@@ -7,32 +7,22 @@ if nargin < 2
   outputDir = tempdir;
 end
 
-% instr
-% instr = regexprep( instr,'@(\w*)','[[$1_index.html,$1]]');
+%outstr = regexprep(instr,'@(\w*)','<$1.$1.html $1>' );
 outstr = makeClassLinks(instr);
 outstr = makeTable(outstr,outputDir);
 outstr = makeBox(outstr,outputDir);
 
 
-function outstr = makeClassLinks(instr)
+function str = makeClassLinks(str)
 
-
-[start stop] = regexp(instr,'@(\w*)');
-
+[start, stop] = regexp(str,'@(\w*)');
+ 
 for k=numel(start):-1:1
-  fhandle = instr(start(k)+1:stop(k));
+  fhandle = str(start(k)+1:stop(k));
   if numel(regexp(which(fhandle),fhandle))>1
-    instr =  [instr(1:start(k)-1) '<' fhandle '_index.html ' fhandle '>' instr(stop(k)+1:end)];
-  else
-    %     foo = which(fhandle);
-    %     if ~isempty(foo)
-    %
-    %       %    instr =  [instr(1:start(k)) '[[' fhandle '.html,' fhandle ']]' instr(stop(k)+1:end)];
-    %     end
+    str =  [str(1:start(k)-1) '<' fhandle '.' fhandle '.html ' fhandle '>' str(stop(k)+1:end)];
   end
 end
-% instr
-outstr = instr;
 
 function outstr = makeTable(instr,outputDir)
 lineBreak = regexp(instr,'\n');
