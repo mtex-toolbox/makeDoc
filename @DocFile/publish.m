@@ -5,34 +5,36 @@ function [html_out,success] = publish( docFiles, varargin )
 %  docFiles - a list of @DocFiles
 %
 % Options
-%  outputDir  -
+%  outDir  -
+%  tmpDir  -
 %  evalCode   -
 %  force      -
 %  publishSettings - struct like <matlab:doc('publish') publish>
 %
 % See also
-% DocFile/makeFunctionsReference DocFile/makeHelpToc makeToolboxXML
+% DocFile/makeHelpToc makeToolboxXML
 
-options = parseArguments(varargin);
+outDir = get_option(varargin,'outDir','.');
+tmpDir = get_option(varargin,'tmpDir',outDir);
+if isempty(dir(tmpDir)), mkdir(tmpDir); end
+if isempty(dir(outDir)), mkdir(outDir); end
 
-tempDir = options.tempDir;
-if isempty(dir(tempDir)), mkdir(tempDir); end
+% force publish
+force = check_option(varargin,'force');
 
-outputDir = options.publishSettings.outputDir;
-if isempty(dir(outputDir)), mkdir(outputDir); end
 
 %% prepare files to publish
 for docFile = docFiles
   
-  target = fullfile(tempDir,docFile.targetTemporary);
+  target = fullfile(tmpDir,docFile.targetTemporary);
     
-  if fileIsNewer(docFile.sourceFile,target) || options.force % ||
+  if fileIsNewer(docFile.sourceFile,target) || force 
     
     disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile,'outputDir',outputDir);
+        text = getFormatedRef(docFile,'outputDir',outDir);
       else
         text = getFormatedDoc(docFile,docFiles);
       end
@@ -58,34 +60,45 @@ end
 % finished script generation
 dispPerm(' ');
 
-copy(DocFile(getPublishGeneral),options.publishSettings.outputDir);
+copy(DocFile(getPublishGeneral),outDir);
 
-options.publishSettings.catchError = false;
-
-% change directory
-oldDir = cd; cd(tempDir);
-
-% 
-settings = getappdata(0,'mtex');
 
 %% publish files
+
+% set up publish settings
+publishSettings.format = get_option(varargin,'format','html');
+publishSettings.figureSnapMethod = get_option(varargin,'figureSnapMethod','print');
+publishSettings.outputDir = outDir;
+publishSettings.useNewFigure = get_option(varargin,'useNewFigure',true);
+publishSettings.evalCode = get_option(varargin,'evalCode',true);
+publishSettings.imageFormat = get_option(varargin,'imageFormat','png');
+publishSettings.stylesheet = get_option(varargin,'stylesheet',getPublishStyle('html'));
+publishSettings.catchError = false;
+publishSettings = getClass(varargin,'struct',publishSettings);
+
+% change directory
+oldDir = cd; cd(tmpDir);
+
+% remember settings
+settings = getappdata(0,'mtex');
+
 for docFile = docFiles
   
   % reapply settings
   setappdata(0,'mtex',settings);
   
   % final html name with script_xxx_xxx
-  htmlTarget = fullfile(outputDir,[docFile.sourceInfo.docName '.html']);
+  htmlTarget = fullfile(outDir,[docFile.sourceInfo.docName '.html']);
 
   % nothing to do
-  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force, continue; end
+  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~force, continue; end
     
   disptmp([ 'publishing: ' docFile.sourceInfo.docName])
   try
           
     evalin('base','clear variables'); close all;
     
-    html_out = publish(docFile.targetTemporary,options.publishSettings);
+    html_out = publish(docFile.targetTemporary, publishSettings);
             
     movefile(html_out,htmlTarget);
       
@@ -93,15 +106,15 @@ for docFile = docFiles
     
     if 1
       % crop all images
-      pngTarget = fullfile(outputDir,targetName,'*.png');
+      pngTarget = fullfile(outDir,targetName,'*.png');
       if ~isempty(dir(pngTarget))
         unix(['mogrify -trim ' pngTarget]);
       end
     
-      attache = dir(fullfile(outputDir,[targetName '*.*']));
+      attache = dir(fullfile(outDir,[targetName '*.*']));
       for n=1:numel(attache)
         newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
-        movefile(fullfile(outputDir,attache(n).name),fullfile(outputDir,newName),'f');
+        movefile(fullfile(outDir,attache(n).name),fullfile(outDir,newName),'f');
       end
     end    
     
@@ -110,7 +123,7 @@ for docFile = docFiles
     success = false;
     
     % remove 
-    delete([outputDir filesep 'script_*']) 
+    delete([outDir filesep 'script_*']) 
     %disptmp('');
     dispPerm(['  Error publishing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
@@ -130,95 +143,3 @@ end
 cd(oldDir);
 
 end
-
-function options = parseArguments(options)
-
-if ~isempty(options)
-  if ~isstruct(options{1})
-    if mod(numel(options),2)
-      error('forgotten argument of option');
-    end
-    options = cell2struct(options(2:2:end)',options(1:2:end)');
-  else
-    options = options{1};
-  end
-end
-
-if ~isfield(options,'force')
-  options.force = false;
-end
-
-
-if ~isfield(options,'format')
-  options.format = 'html';
-end
-
-
-if ~isfield(options,'force')
-  options.viewoutput = false;
-end
-
-if ~isfield(options,'outputDir')
-  options.outputDir = tempdir;
-end
-
-if ~isfield(options,'tempDir')
-  options.tempDir = options.outputDir;
-end
-
-if ~isfield(options,'evalCode')
-  options.evalCode = false;
-end
-
-
-if ~isfield(options,'publishSettings')
-  options.publishSettings = struct;
-end
-
-switch options.format 
-  case {'html','jar','help'}
-    format = 'html';
-    style = 'html';
-    imageFormat = 'png';
-  case {'xml'}
-    format = 'xml';
-    imageFormat = 'png';
-    style = 'html';
-end
-
-% end
-
-options.publishSettings.useNewFigure = true;
-if ~isfield(options.publishSettings,'format')
-  options.publishSettings.format = format;
-end
-
-if ~isfield(options.publishSettings,'figureSnapMethod')
-  options.publishSettings.figureSnapMethod = 'print';
-end
-
-if ~isfield(options.publishSettings,'outputDir')
-  options.publishSettings.outputDir = options.outputDir;
-end
-
-if ~isfield(options.publishSettings,'useNewFigure')
-  options.publishSettings.useNewFigure = true;
-end
-
-if ~isfield(options.publishSettings,'evalCode')
-  options.publishSettings.evalCode = options.evalCode;
-end
-
-if ~isfield(options.publishSettings,'imageFormat')
-  options.publishSettings.imageFormat = imageFormat;
-end
-
-if ~isfield(options.publishSettings,'stylesheet')
-  options.publishSettings.stylesheet = getPublishStyle(style);
-end
-
-options = rmfield(options,{'outputDir','evalCode'});
-
-end
-
-

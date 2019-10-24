@@ -1,77 +1,42 @@
-function makeHelpToc(docFiles, mainFile, varargin )
+function makeHelpToc(docFiles, mainFile, outFile )
 % make a toc for a matlab help
+%
+% Syntax
+%
+%   makeHelpToc(docFiles,mainFile,'helptoc.xml')
 %
 % Input
 %  docFiles - a list of @DocFile
 %  mainFile - the @DocFile of a name of a DocFile where to start, this DocFile should have a *.toc
 %
-% Options
-%  outputDir        -  the folder where to put all function--pages
-%  FunctionMainFile -  a name of a DocFile, where the Functions pages begin
-%  ProductPage      -  the root of the toc starts with this page
-%
 % See also
-% DocFile/makeFunctionsReference DocFile/makeDemoToc DocFile/publish
+% DocFile/publish
 
-[options,mainFile,docFiles] = parseArguments(varargin,docFiles,mainFile);
+% turn mainFile into a docFile
+if ~isa(mainFile,'DocFile'), mainFile = getFilesByName(docFiles,mainFile); end
 
-
-options.functions_cat = 'funcref_cat';
-pos = find(ismember({docFiles.sourceFile},options.FunctionMainFile.sourceFile));
-if ~isempty(pos)
-  docFiles(pos).sourceInfo.docName = options.functions_cat;
-end
-
-
+% make dom
 [dom,document] = domCreateDocument('toc');
-makeToc(dom,document,mainFile,docFiles,options);
+makeToc(dom,document,mainFile,docFiles);
 
+% write to file
+xmlwrite(outFile,dom);
 
-xmlwrite(fullfile(options.outputDir,'helptoc.xml'),dom);
-
-
-function [options,mainFile,docFiles] = parseArguments(options,docFiles,mainFile)
-
-if ~isstruct(options)
-  if mod(numel(options),2)
-    error('forgotten argument of option');
-  end
-  options = cell2struct(options(2:2:end)',options(1:2:end)');
-end
-
-if ~isfield(options,'outputDir')
-  options.outputDir = cd;
-end
-
-if ~isfield(options,'FunctionMainFile')
-  options.FunctionMainFile = docFiles(1);
-end
-
-if ~isa(options.FunctionMainFile,'DocFile')
-  options.FunctionMainFile = getFilesByName(docFiles,options.FunctionMainFile);
-end
-
-if ~isa(mainFile,'DocFile')
-  mainFile = getFilesByName(docFiles,mainFile);
 end
 
 
-if ~isfield(options,'ProductPage')
-  [xml,content] = getToolboxXML();
-  options.ProductPage = content.productpage;  
-  mainFile.sourceInfo.docName = regexprep(options.ProductPage,'\.html','');
-end
+function makeToc(dom,parentNode,file,docFiles,Label)
+% recursevly walk through directories with a toc file
 
-
-function makeToc(dom,parentNode,file,docFiles,options,Label)
-
-if nargin < 6, Label = ''; end
+if nargin < 5, Label = ''; end
 
 node = createTocNode(dom,parentNode,file,Label);
 
 if length(file)>1
+  
+  dispPerm(['Warning: The file ' file(1).sourceInfo.name ' appears twice']);
+  file
   file = file(1);
-  dispPerm(['Warning: The file ' file.sourceInfo.name ' appears twice']);
 end
 
 if hasTocFile(file)  
@@ -81,7 +46,7 @@ if hasTocFile(file)
     if isempty(tocFile)
       disp([tocEntries{k} ' not found']);
     else
-      makeToc(dom,node,tocFile,docFiles,options,tocLabel{k});
+      makeToc(dom,node,tocFile,docFiles,tocLabel{k});
     end
   end
 elseif strfind(file.sourceInfo.name,'_index')
@@ -92,18 +57,19 @@ elseif strfind(file.sourceInfo.name,'_index')
   
   for tocFiles = docFiles(match)
     if strcmp(tocFiles.sourceInfo.name, nam)
-      makeToc(dom,node,tocFiles,docFiles,options);
+      makeToc(dom,node,tocFiles,docFiles);
     end
   end
   for tocFiles = docFiles(match)
     if ~strcmp(tocFiles.sourceInfo.name, nam)
-      makeToc(dom,node,tocFiles,docFiles,options);
+      makeToc(dom,node,tocFiles,docFiles);
     end
   end
 end
-
+end
 
 function node = createTocNode(dom,parentNode,docFile,Label)
+% create node
 
 sourceInfo = docFile.sourceInfo;
 
@@ -112,6 +78,7 @@ if isFunction(docFile)
     {'target',[sourceInfo.docName '.html']});
 else
    
+  %docFile
   if ~isempty(Label)
     title = Label;
   else
@@ -123,4 +90,5 @@ else
   
   node = domAddChild(dom,parentNode,'tocitem', strtrim(title), attributes);
   
+end
 end

@@ -2,7 +2,7 @@
 <mytoolbox>
    <name>MTEX</name>
    <fullname>&lt;b&gt;MTEX&lt;/b&gt; - A MATLAB Toolbox for Quantitative Texture Analysis</fullname>
-   <versionname>MTEX 4.0.0</versionname>
-   <procuctpage>mtex_product_page.html</procuctpage>
+   <versionname>MTEX 5.2</versionname>
+   <procuctpage>DocumentationMatlab.html</procuctpage>
    <icon>$toolbox/matlab/icons/book_mat.gif</icon>
 </mytoolbox>

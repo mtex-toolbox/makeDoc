@@ -30,10 +30,6 @@ docPath = fullfile(docHelpPath,'help');
 outputDir = fullfile(docPath,'html');
 tmpDir = fullfile(docPath,'tmp');
 
-%% Generate the Function Reference overview pages
-
-makeFunctionsReference(docFiles,'FunctionReference','outputDir',outputDir);
-
 %% Build the Toc for the Toolbox
 
 makeHelpToc(docFiles,'docGuide',...
