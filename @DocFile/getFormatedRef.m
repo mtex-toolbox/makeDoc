@@ -139,8 +139,9 @@ end
 
 
 % ------------------------------------------------------------
-  function out = seeAlso(in,varargin)    
-    out = regexprep(inline(in),'([\w\.s]*)','<$1.html $1>');
+  function out = seeAlso(in,varargin)
+    out = regexprep(inline(in),'/','.');
+    out = regexprep(out,'([\w\.s]*)','<$1.html $1>');
     out = regexprep(out,'\n\n','\n%');
   end
 
