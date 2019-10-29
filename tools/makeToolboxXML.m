@@ -1,4 +1,4 @@
-function makeToolboxXML(outDir,varargin)
+function dom = makeToolboxXML(outDir,varargin)
 % generate information about the toolbox to publish
 %
 % Input
