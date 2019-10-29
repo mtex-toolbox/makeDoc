@@ -1,40 +1,37 @@
-function [html_out,success] = publish( docFiles, varargin )
+function [html_out,success] = publish( docFiles, options)
 % publishes the docFiles
+%
+% Syntax
+%   publish(docFiles, options)
 %
 % Input
 %  docFiles - a list of @DocFiles
-%
-% Options
-%  outDir  -
-%  tmpDir  -
-%  evalCode   -
-%  force      -
-%  publishSettings - struct like <matlab:doc('publish') publish>
+%  options.outDir  -
+%  options.tmpDir  -
+%  options.force      -
+%  options.publishSettings - struct like <matlab:doc('publish') publish>
+%  options.xmlDom
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
 
-outDir = get_option(varargin,'outDir','.');
-tmpDir = get_option(varargin,'tmpDir',outDir);
-if isempty(dir(tmpDir)), mkdir(tmpDir); end
-if isempty(dir(outDir)), mkdir(outDir); end
-
-% force publish
-force = check_option(varargin,'force');
-
+if isempty(dir(options.tmpDir)), mkdir(options.tmpDir); end
+if isempty(dir(options.outDir)), mkdir(options.outDir); end
+options = setDefault(options,'imageDir',options.outDir);
+options = setDefault(options,'force',false);
 
 %% prepare files to publish
 for docFile = docFiles
   
-  target = fullfile(tmpDir,docFile.targetTemporary);
+  target = fullfile(options.tmpDir,docFile.targetTemporary);
     
-  if fileIsNewer(docFile.sourceFile,target) || force 
+  if fileIsNewer(docFile.sourceFile,target) || options.force 
     
     disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile,'outputDir',outDir);
+        text = getFormatedRef(docFile,'outputDir',options.outDir);
       else
         text = getFormatedDoc(docFile,docFiles);
       end
@@ -60,27 +57,33 @@ end
 % finished script generation
 dispPerm(' ');
 
-copy(DocFile(getPublishGeneral),outDir);
+copy(DocFile(getPublishGeneral),options.outDir);
 
 
 %% publish files
 
 % set up publish settings
-publishSettings.format = get_option(varargin,'format','html');
-publishSettings.figureSnapMethod = get_option(varargin,'figureSnapMethod','print');
-publishSettings.outputDir = outDir;
-publishSettings.useNewFigure = get_option(varargin,'useNewFigure',true);
-publishSettings.evalCode = get_option(varargin,'evalCode',true);
-publishSettings.imageFormat = get_option(varargin,'imageFormat','png');
-publishSettings.stylesheet = get_option(varargin,'stylesheet',getPublishStyle('html'));
-publishSettings.catchError = false;
-publishSettings = getClass(varargin,'struct',publishSettings);
+pubSettings = options.publishSettings;
+pubSettings = setDefault(pubSettings,'format','html');
+pubSettings = setDefault(pubSettings,'figureSnapMethod','print');
+pubSettings = setDefault(pubSettings,'useNewFigure',true);
+pubSettings = setDefault(pubSettings,'evalCode',true);
+pubSettings = setDefault(pubSettings,'imageFormat','png');
+pubSettings = setDefault(pubSettings,'stylesheet',getPublishStyle('html'));
+pubSettings.catchError = false;
+pubSettings.outputDir = options.outDir;
 
 % change directory
-oldDir = cd; cd(tmpDir);
+oldDir = cd; cd(options.tmpDir);
 
 % remember settings
 settings = getappdata(0,'mtex');
+
+if isfield(options,'xmlDom')
+  mytoolbox = options.xmlDom.getDocumentElement;
+  node = options.xmlDom.createElement('pageSource');
+  mytoolbox.appendChild(node);
+end
 
 for docFile = docFiles
   
@@ -88,17 +91,29 @@ for docFile = docFiles
   setappdata(0,'mtex',settings);
   
   % final html name with script_xxx_xxx
-  htmlTarget = fullfile(outDir,[docFile.sourceInfo.docName '.html']);
+  htmlTarget = fullfile(options.outDir,[docFile.sourceInfo.docName '.html']);
 
   % nothing to do
-  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~force, continue; end
+  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force, continue; end
     
   disptmp([ 'publishing: ' docFile.sourceInfo.docName])
+  
+  % update xml file
+  stylePath = fileparts(pubSettings.stylesheet);
+  
   try
           
     evalin('base','clear variables'); close all;
+
+    % update xml file
+    if isfield(options,'xmlDom')
+      pageSource = strrep(docFile.sourceFile,mtex_path,'');
+      node.setTextContent(pageSource);
+      mytoolbox.replaceChild(node,node);
+      xmlwrite(fullfile(stylePath,'toolbox.xml'),options.xmlDom);
+    end
     
-    html_out = publish(docFile.targetTemporary, publishSettings);
+    html_out = publish(docFile.targetTemporary, pubSettings);
             
     movefile(html_out,htmlTarget);
       
@@ -106,15 +121,16 @@ for docFile = docFiles
     
     if 1
       % crop all images
-      pngTarget = fullfile(outDir,targetName,'*.png');
+      pngTarget = fullfile(options.outDir,[targetName '*.png']);
       if ~isempty(dir(pngTarget))
         unix(['mogrify -trim ' pngTarget]);
       end
     
-      attache = dir(fullfile(outDir,[targetName '*.*']));
+      % move image files to new directory
+      attache = dir(fullfile(options.outDir,[targetName '*.*']));
       for n=1:numel(attache)
         newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
-        movefile(fullfile(outDir,attache(n).name),fullfile(outDir,newName),'f');
+        movefile(fullfile(options.outDir,attache(n).name),fullfile(options.imageDir,newName),'f');
       end
     end    
     
@@ -123,7 +139,7 @@ for docFile = docFiles
     success = false;
     
     % remove 
-    delete([outDir filesep 'script_*']) 
+    delete([options.outDir filesep 'script_*']) 
     %disptmp('');
     dispPerm(['  Error publishing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
@@ -137,9 +153,16 @@ for docFile = docFiles
     end
     
   end
+  
+end
+
+if isfield(options,'xmlDom'), mytoolbox.removeChild(node); end
+cd(oldDir);
 
 end
 
-cd(oldDir);
+function opt = setDefault(opt,field,value)
+
+if ~isfield(opt,field), opt.(field) = value; end
 
 end
