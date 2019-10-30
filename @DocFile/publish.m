@@ -79,12 +79,6 @@ oldDir = cd; cd(options.tmpDir);
 % remember settings
 settings = getappdata(0,'mtex');
 
-if isfield(options,'xmlDom')
-  mytoolbox = options.xmlDom.getDocumentElement;
-  node = options.xmlDom.createElement('pageSource');
-  mytoolbox.appendChild(node);
-end
-
 for docFile = docFiles
   
   % reapply settings
@@ -106,11 +100,10 @@ for docFile = docFiles
     evalin('base','clear variables'); close all;
 
     % update xml file
-    if isfield(options,'xmlDom')
-      pageSource = strrep(docFile.sourceFile,mtex_path,'');
-      node.setTextContent(pageSource);
-      mytoolbox.replaceChild(node,node);
-      xmlwrite(fullfile(stylePath,'toolbox.xml'),options.xmlDom);
+    if isfield(options,'xml')      
+      options.xml.toolbox.pageSource.Text = strrep(docFile.sourceFile,mtex_path,'');
+      options.xml.toolbox.htmlTarget = [docFile.sourceInfo.docName '.html'];
+      struct2xml(options.xml,fullfile(stylePath,'toolbox.xml'));      
     end
     
     html_out = publish(docFile.targetTemporary, pubSettings);
