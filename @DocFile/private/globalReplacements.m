@@ -12,6 +12,11 @@ outstr = makeClassLinks(instr);
 outstr = makeTable(outstr,outputDir);
 outstr = makeBox(outstr,outputDir);
 
+% translate latex to mathJax
+%regexprep(outstr,'\$(.+?)\$','<html>x$1x</html>')
+outstr = regexprep(outstr,'(?<!\$)\$(?!\$)(.+?)\$','\\($1\\)');
+outstr = regexprep(outstr,'\$\$(.+?)\$\$','\\[$1\\]');
+
 
 function str = makeClassLinks(str)
 
@@ -133,7 +138,7 @@ for k=numel(boxFirstMark):-1:1
   title = boxText(2:firstLineBreak);
   text = regexprep(['% ' boxText(firstLineBreak+1:end)],'\n','\n% ');
   
-  text = tmpPublish(['%% ' char(10) text],outputDir);
+  text = tmpPublish(['%% ' newline text],outputDir);
   
   [dom,doc] = domCreateDocument('html');
   div = domAddChild(dom,doc,'div',[],{'class','note'});
@@ -145,12 +150,12 @@ for k=numel(boxFirstMark):-1:1
   
   imark =  ['%' repmat(' ' ,1,intend-1)];
   
-  box = regexprep([imark char(10) text char(10) ],'\n',['\n' imark]);
+  box = regexprep([imark newline text newline ],'\n',['\n' imark]);
   
   lineBreak = regexp(instr,'\n');
   lastLineBreak = min(lineBreak(boxLastMark(k)+1<lineBreak));
   
-  instr = [instr(1:boxFirstMark(k)-1)  char(10) box instr(lastLineBreak:end)];
+  instr = [instr(1:boxFirstMark(k)-1)  newline box instr(lastLineBreak:end)];
 end
 
 outstr = instr;
