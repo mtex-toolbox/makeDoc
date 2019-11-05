@@ -1,9 +1,8 @@
-function helpStr = getFormatedDoc(file, varargin)
+function helpStr = getFormatedDoc(file, options)
 % returns a processed string for normal script files
 %
 % Input
 %  file     - current file
-%  docFiles - array of @DocFile for lookup crossref--table
 %
 % Output
 %  helpString - a string for publishing
@@ -12,4 +11,4 @@ function helpStr = getFormatedDoc(file, varargin)
 % DocFile/getFormatedRef DocFile/publish
 
 helpStr = read(file);
-helpStr = globalReplacements(helpStr);
+helpStr = globalReplacements(helpStr,options);

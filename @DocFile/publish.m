@@ -31,9 +31,9 @@ for docFile = docFiles
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile,'outputDir',options.outDir);
+        text = getFormatedRef(docFile,options);
       else
-        text = getFormatedDoc(docFile,docFiles);
+        text = getFormatedDoc(docFile,options);
       end
     catch %#ok<CTCH>
       %disptmp(newline);

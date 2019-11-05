@@ -32,23 +32,6 @@ file = struct(...
   'path',''),...
   'targetTemporary','');
 
-% 
-% outputDir = fullfile(cd,'help','html');
-% evalCode = false;
-% for k=1:2:numel(varargin)
-%   switch lower(varargin{k})
-%     case 'outputdir'
-%       outputDir = varargin{k+1};
-%     case 'evalcode'
-%       evalCode =  varargin{k+2};
-%     otherwise
-%       error(['unkown option: '  varargin{k}]);
-%   end
-% end
-
-% outputDir = get_option(varargin,'outputDir',fullfile(mtex_path,'help','html'));
-
-
 for k=1:numel(file)
   currentFile = file(k);
   sourceInfo = currentFile.sourceInfo;
@@ -95,9 +78,4 @@ currentFile.targetTemporary = ['script_' regexprep(sourceInfo.docName,'\.','__')
 %   currentFile.targetTemporary(end+1:end+3) = 'ref';
 % end
 % 
-
-
-
-
-
 

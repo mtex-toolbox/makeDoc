@@ -1,4 +1,4 @@
-function helpStr = getFormatedRef( docFile ,varargin)
+function helpStr = getFormatedRef( docFile ,options)
 % returns a processed string for function file
 %
 % Input
@@ -72,7 +72,7 @@ for i = 1:numel(keyWords)
   helpStr =  regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
 end
 
-helpStr = globalReplacements(helpStr);
+helpStr = globalReplacements(helpStr,options);
 m = m2struct(helpStr);
 
 
@@ -116,18 +116,18 @@ content = [content c '%% ' title];
 end
 
 % -----------------------------------------------------------
-function content = getContentByTopic(sections,topic,format)
+function content = getContentByTopic(sections,topic)
 
 topic = regexptranslate('escape',topic);
 % regexpi({sections.title},topic,'start');
 topicFound = false;
 content = '';
 for k=1:numel(sections)
-  if strncmp(lower(sections(k).title),lower(topic),numel(topic))
+  if strncmpi(sections(k).title,topic,numel(topic))
     content = [' ' sections(k).content];
     topicFound = true;
   elseif topicFound && isempty(sections(k).title)
-     content = [content newline '% ' newline  sections(k).content];
+     content = [content newline '% ' newline  sections(k).content]; %#ok<AGROW>
   else
     topicFound = false;
   end

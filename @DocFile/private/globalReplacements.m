@@ -1,21 +1,19 @@
-function outstr = globalReplacements(instr,outputDir)
+function outstr = globalReplacements(instr,options)
 
 
 % instr = regexp(instr,'@(\w*)(?@numel(regexp(which(''$1''),''$1''))>1)','[[$1_index.html,$1]]');
 
-if nargin < 2
-  outputDir = tempdir;
-end
-
 %outstr = regexprep(instr,'@(\w*)','<$1.$1.html $1>' );
 outstr = makeClassLinks(instr);
-outstr = makeTable(outstr,outputDir);
-outstr = makeBox(outstr,outputDir);
+outstr = makeTable(outstr);
+outstr = makeBox(outstr);
 
 % translate latex to mathJax
 %regexprep(outstr,'\$(.+?)\$','<html>x$1x</html>')
-outstr = regexprep(outstr,'(?<!\$)\$(?!\$)(.+?)\$','\\($1\\)');
-outstr = regexprep(outstr,'\$\$(.+?)\$\$','\\[$1\\]');
+if strcmpi(options.LaTex,'mathJax')
+  outstr = regexprep(outstr,'(?<!\$)\$(?!\$)(.+?)\$','\\($1\\)');
+  outstr = regexprep(outstr,'\$\$(.+?)\$\$','\\[$1\\]');
+end
 
 
 function str = makeClassLinks(str)
@@ -29,7 +27,7 @@ for k=numel(start):-1:1
   end
 end
 
-function outstr = makeTable(instr,outputDir)
+function outstr = makeTable(instr)
 lineBreak = regexp(instr,'\n');
 
 [dom,doc] = domCreateDocument('html');
@@ -58,7 +56,7 @@ while ~isempty(tableMarker)
       tr = domAddChild(dom,table,'tr');
       for col=1:numel(row)-1
         text = strtrim(instr(row(col)+2:row(col+1)-1));
-        text = tmpPublish(  ['%% ' newline '% ' text],outputDir);
+        text = tmpPublish(  ['%% ' newline '% ' text],tempdir);
         
         td = domAddChild(dom,tr,'td');
         newNode = dom.importNode(text,true);
@@ -121,7 +119,7 @@ outstr = instr;
 
 
 
-function outstr = makeBox(instr,outputDir)
+function outstr = makeBox(instr)
 
 boxBegin = '(?<=(\n|\n%)[ ]*)#(\w+)';
 boxEnd = '(.*?)(?=(\n%[ ]*#|\n[ ]*(?!%)|%%|$))';
@@ -138,7 +136,7 @@ for k=numel(boxFirstMark):-1:1
   title = boxText(2:firstLineBreak);
   text = regexprep(['% ' boxText(firstLineBreak+1:end)],'\n','\n% ');
   
-  text = tmpPublish(['%% ' newline text],outputDir);
+  text = tmpPublish(['%% ' newline text],tempdir);
   
   [dom,doc] = domCreateDocument('html');
   div = domAddChild(dom,doc,'div',[],{'class','note'});
