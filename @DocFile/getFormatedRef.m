@@ -1,11 +1,11 @@
-function helpStr = getFormatedRef( docFile ,options)
+function helpStr = getFormatedRef( docFile)
 % returns a processed string for function file
 %
 % Input
-% file     - current file
+%  file - current file
 %
 % Output
-% helpString - a string for publishing
+%  helpString - a string for publishing
 %
 % Remarks !TODO
 % 'input', 'output', 'example', 'see also', 'description', 'syntax', 'view code'
@@ -15,88 +15,90 @@ function helpStr = getFormatedRef( docFile ,options)
 
 keyWords = {'Description','Syntax','Input','Output','Options','Flags',...
   'Class Properties','Dependent Class Properties','Derived Classes','See also','Example'};
-sections = help2struct(docFile);
 
-if ~isempty(sections)
-  content = addContentByTopic('',sections,sections(1).title,@inline);
-  if isempty(content)
-    content = addTitle('',sections(1).title);
-  end
-  content = [content newline '%% View Code' newline '% '];
-  content = addContentByTopic(content,sections,'Description',@inline);
-  [content, isNew ]= addContentByTopic(content,sections,'Syntax',@preSyntax);
-  [isFunc, Syntax] = isFunction(docFile);
-  if ~isNew && isFunc
-    content = [addTitle(content,'Syntax') newline preSyntax(Syntax,sections)];
-  end
-    
-  for top = keyWords(3:9)
-    content = addContentByTopic(content,sections,top{1},@preVarComment);
-  end
-  
-  content = addContentByTopic(content,sections,'Remarks',@inline);
-  content = addContentByTopic(content,sections,'Example',@pre);
-  content = addContentByTopic(content,sections,'See also',@seeAlso);
-  helpStr = content;
-else
-  helpStr = 'error';
+% split function file docu into sections according to the above key words
+sections = doc2sections(docFile, keyWords);
+
+% first section is title
+helpStr = addContentByTopic('',sections,sections(1).title,@inline);
+if isempty(helpStr), helpStr = addTitle('',sections(1).title); end
+
+% include a marker that will be replaced by a link to view the code
+helpStr = [helpStr newline '%% View Code' newline '% '];
+
+% add description
+helpStr = addContentByTopic(helpStr,sections,'Description',@inline);
+
+% add syntax
+[helpStr, isNew ]= addContentByTopic(helpStr,sections,'Syntax',@preSyntax);
+[isFunc, Syntax] = isFunction(docFile);
+
+% if no explicite syntax was given we may generate one automatically
+if ~isNew && isFunc
+  helpStr = [addTitle(helpStr,'Syntax') newline preSyntax(Syntax,sections)];
 end
 
-function  sections = help2struct(file)
-% struct('title','sectioname','content','descriptive text')
+% add all other sections 
+for top = keyWords(3:9)
+  helpStr = addContentByTopic(helpStr,sections,top{1},@preVarComment);
+end
+  
+helpStr = addContentByTopic(helpStr,sections,'Remarks',@inline);
+helpStr = addContentByTopic(helpStr,sections,'Example',@pre);
+helpStr = addContentByTopic(helpStr,sections,'See also',@seeAlso);
 
+end
+
+function sections = doc2sections(docFile,keyWords)
+
+% extract help string from function or class file
 %helpStr = helpfunc(file.sourceFile);
-process = helpUtils.helpProcess(1, 1, {file.sourceFile});
+process = helpUtils.helpProcess(1, 1, {docFile.sourceFile});
 process.getHelpText;
 helpStr = process.helpStr;
 
 if isempty(helpStr)
-  process = helpUtils.helpProcess(0,1, {file.sourceFile});
-
+  process = helpUtils.helpProcess(0,1, {docFile.sourceFile});
   process.getHelpText;
-  
-  helpStr = process.helpStr;
-  
+  helpStr = process.helpStr;  
 end
 
-docName = file.sourceInfo.docName;
+% insert title
+docName = docFile.sourceInfo.docName;
 %Title = regexprep(docName,'(\w*)\.(\w*)', ...
 %  ['$2' newline '  \(method of <$1_index.html $1>\)' newline ' % ']);
 Title = regexprep(docName,'(\w*)\.(\w*)', ['$2' newline ' % ']);
 
 helpStr = [' % ' Title  newline  helpStr];
 
+% add a '%' to each line
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
 
+% add a '%' in front of each keyword to turn it into a section
 for i = 1:numel(keyWords)
-  helpStr =  regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
+  helpStr = regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
 end
 
-helpStr = globalReplacements(helpStr,options);
-m = m2struct(helpStr);
+% this is an internal matlab function to generate a stuct for each section
+sections = m2struct(helpStr);
 
-
-% unsafe
-% sectionPattern = '%%(?<title>(.*?))\n(?<content>(.*?))(?=\n%%|$)|%%(?<title>(.*?))(?=\n%%|$)';
-% sections = regexp(helpStr,sectionPattern,'names');
-
-for k=1:numel(m)
-  sections(k).title = strtrim(m(k).title);
+% polish the output
+for k=1:numel(sections)
+  sections(k).title = strtrim(sections(k).title);
   
-  text = cellfun(@(x) ['% ' x newline],m(k).text,'Uniformoutput',false);
-  text = [text{:}];
-  sections(k).content = text;
-  %   sections(k).content = regexprep(sections(k).content, '^%','');
+  % joint text
+  text = cellfun(@(x) ['% ' x newline],sections(k).text,'Uniformoutput',false);
+  sections(k).text = [text{:}];  
 end
 
 end
+
 
 function [content,isNew] = addContentByTopic(content,sections,topic,format)
 
 newContent = getContentByTopic(sections,topic);
 isNew = ~isempty(newContent);
-if isNew
-  
+if isNew  
   newContent = feval(format,newContent,sections);
   content =  [addTitle(content,topic)  newContent];
 end
@@ -115,19 +117,19 @@ content = [content c '%% ' title];
 
 end
 
-% -----------------------------------------------------------
 function content = getContentByTopic(sections,topic)
 
 topic = regexptranslate('escape',topic);
 % regexpi({sections.title},topic,'start');
+
 topicFound = false;
 content = '';
 for k=1:numel(sections)
   if strncmpi(sections(k).title,topic,numel(topic))
-    content = [' ' sections(k).content];
+    content = [' ' sections(k).text];
     topicFound = true;
   elseif topicFound && isempty(sections(k).title)
-     content = [content newline '% ' newline  sections(k).content]; %#ok<AGROW>
+     content = [content newline '% ' newline  sections(k).text]; %#ok<AGROW>
   else
     topicFound = false;
   end
@@ -139,17 +141,18 @@ end
 
 
 % ------------------------------------------------------------
-  function out = seeAlso(in,varargin)
-    out = regexprep(inline(in),'/','.');
-    out = regexprep(out,'([\w\.s]*)','<$1.html $1>');
-    out = regexprep(out,'\n\n','\n%');
-  end
+function out = inline(in,varargin)
+out = subText(in,1,numel(in));
+% out = regexprep([newline '% ' out],'\n%[ ]*','\n% ');
+out = regexprep(out,'\n\n','\n%');
+end
 
-  function out = inline(in,varargin)  
-    out = subText(in,1,numel(in));
-    % out = regexprep([newline '% ' out],'\n%[ ]*','\n% ');
-    out = regexprep(out,'\n\n','\n%');
-  end
+function out = seeAlso(in,varargin)
+out = regexprep(inline(in),'/','.');
+out = regexprep(out,'([\w\.s]*)','<$1.html $1>');
+out = regexprep(out,'\n\n','\n%');
+end
+
 
 function out = pre(in,varargin)
 
@@ -241,4 +244,3 @@ out = strtrim(regexprep(in,'<([^\ ]+)\ ([^>]+)>','<a href="$1">$2</a>'));
 %out = strtrim(in);
 end
 
-end

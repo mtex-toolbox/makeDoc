@@ -28,6 +28,11 @@ for k=numel(start):-1:1
 end
 
 function outstr = makeTable(instr)
+%
+% format tables of the form || abc || abc || abc ||
+%
+
+
 lineBreak = regexp(instr,'\n');
 
 [dom,doc] = domCreateDocument('html');

@@ -11,6 +11,7 @@ function [html_out,success] = publish( docFiles, options)
 %  options.force      -
 %  options.publishSettings - struct like <matlab:doc('publish') publish>
 %  options.xmlDom
+%  options.LaTex   - 'Matlab', 'mathJax'
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
@@ -31,10 +32,14 @@ for docFile = docFiles
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile,options);
+        text = getFormatedRef(docFile);
       else
-        text = getFormatedDoc(docFile,options);
+        text = read(file);
       end
+      
+      % globaly replace formulae, tables, etc.
+      text = globalReplacements(text,options);
+      
     catch %#ok<CTCH>
       %disptmp(newline);
       dispPerm(['  Error preparing <a href="matlab: edit(''' ...

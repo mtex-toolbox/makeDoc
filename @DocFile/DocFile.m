@@ -2,9 +2,9 @@ function file = DocFile(files,varargin)
 % constructor 
 %
 % Syntax
-% files = DocFile(path) - recusively adds all files in sub--dirs
-% files = DocFile({fname,fname,...}) - adds a given cell--array of full--fill names 
-% files = DocFile('function') - add a single function which is on search path
+%   files = DocFile(path) - recusively adds all files in sub--dirs
+%   files = DocFile({fname,fname,...}) - adds a given cell--array of full--fill names 
+%   files = DocFile('function') - add a single function which is on search path
 %
 % See also
 % getFiles
@@ -13,9 +13,7 @@ function file = DocFile(files,varargin)
 %   doc = DocFile(fullfile(docHelpPath,'help','docGuide'))
 %
 
-if nargin < 1
-  error('I need at least one file or path!')
-end
+if nargin < 1, error('I need at least one file or path!'); end
 
 if ~iscell(files) && isfolder(files)
   files = getFiles(files,'*.m',true);
