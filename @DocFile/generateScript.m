@@ -1,4 +1,4 @@
-function helpStr = getFormatedRef( docFile)
+function helpStr = generateScript( docFile)
 % returns a processed string for function file
 %
 % Input

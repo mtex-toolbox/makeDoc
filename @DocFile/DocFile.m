@@ -33,7 +33,7 @@ file = struct(...
 for k=1:numel(file)
   currentFile = file(k);
   sourceInfo = currentFile.sourceInfo;
-  %   if ~isempty(dir(currentFile.sourceFile))
+  
   [sourceInfo.path,sourceInfo.name,sourceInfo.ext] = fileparts(currentFile.sourceFile);
   if isempty(sourceInfo.path)
     currentFile.sourceFile = which(currentFile.sourceFile);
@@ -44,18 +44,14 @@ for k=1:numel(file)
     case '.m'
       [currentFile, sourceInfo] = setupmfileInfo(currentFile,sourceInfo);
     otherwise      
-%       target = fullfile(outputDir,sourceInfo.name);
       currentFile.targetTemporary = [sourceInfo.name,sourceInfo.ext];
   end
   currentFile.sourceInfo = sourceInfo;
-%   currentFile.outputDir = outputDir;
+
   file(k) = currentFile;
-  %   end
 end
 
 file = class(file,'DocFile');
-
-
 
 function [currentFile, sourceInfo] = setupmfileInfo(currentFile, sourceInfo)
 
@@ -65,15 +61,9 @@ if ~isempty(pos)
 else
   sourceInfo.docName = sourceInfo.name;
 end
-% 
-% target = fullfile(outputDir,sourceInfo.docName);
+
+% we nedd to replace '.' by '__' since Matlab is not able to publish files
+% with a '.' in it
 currentFile.targetTemporary = ['script_' regexprep(sourceInfo.docName,'\.','__'),sourceInfo.ext];
-% currentFile.targetFile = [target,'.html'];
-% 
-% % eval or not?
-% [sourceInfo.isFunction,sourceInfo.Syntax] = isFunction(currentFile.sourceFile);
-% if sourceInfo.isFunction
-%   currentFile.targetTemporary(end+1:end+3) = 'ref';
-% end
-% 
+
 

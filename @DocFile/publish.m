@@ -26,15 +26,15 @@ for docFile = docFiles
   
   target = fullfile(options.tmpDir,docFile.targetTemporary);
     
-  if fileIsNewer(docFile.sourceFile,target) || options.force 
+  if fileIsNewer(docFile.sourceFile,target) || options.force
     
     disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = getFormatedRef(docFile);
+        text = generateScript(docFile);
       else
-        text = read(file);
+        text = read(docFile.sourceFile);
       end
       
       % globaly replace formulae, tables, etc.
