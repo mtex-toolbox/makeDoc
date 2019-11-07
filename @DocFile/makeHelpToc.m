@@ -73,7 +73,7 @@ function node = createTocNode(dom,parentNode,docFile,Label)
 
 sourceInfo = docFile.sourceInfo;
 
-if isFunction(docFile)
+if isFunction(docFile) || isClass(docFile)
   node = domAddChild(dom,parentNode,'tocitem', sourceInfo.name,...
     {'target',[sourceInfo.docName '.html']});
 else
