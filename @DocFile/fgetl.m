@@ -1,8 +1,6 @@
 function str = fgetl(file,varargin)
 
-file = file.sourceFile;
-  
-fid = fopen(file,'r');
+fid = fopen(file.sourceFile,'r');
 if fid < 0
   str = '';
 else
