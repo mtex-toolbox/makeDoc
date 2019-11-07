@@ -32,13 +32,13 @@ for docFile = docFiles
           
     try
       if isFunction(docFile) || isClass(docFile)
-        text = generateScript(docFile);
+        text = generateScript(docFile,options);
       else
         text = read(docFile.sourceFile);
+
+        % globaly replace formulae, tables, etc.
+        text = globalReplacements(text,options);
       end
-      
-      % globaly replace formulae, tables, etc.
-      text = globalReplacements(text,options);
       
     catch %#ok<CTCH>
       %disptmp(newline);

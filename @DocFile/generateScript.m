@@ -1,4 +1,4 @@
-function helpStr = generateScript( docFile)
+function helpStr = generateScript( docFile,options)
 % returns a processed string for function file
 %
 % Input
@@ -17,7 +17,7 @@ keyWords = {'Description','Syntax','Input','Output','Options','Flags',...
   'Class Properties','Dependent Class Properties','Derived Classes','See also','Example'};
 
 % split function file docu into sections according to the above key words
-sections = doc2sections(docFile, keyWords);
+sections = doc2sections(docFile, keyWords,options);
 
 % first section is title
 helpStr = addContentByTopic('',sections,sections(1).title,@inline);
@@ -49,7 +49,7 @@ helpStr = addContentByTopic(helpStr,sections,'See also',@seeAlso);
 
 end
 
-function sections = doc2sections(docFile,keyWords)
+function sections = doc2sections(docFile,keyWords,options)
 
 % extract help string from function or class file
 %helpStr = helpfunc(file.sourceFile);
@@ -78,6 +78,8 @@ helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
 for i = 1:numel(keyWords)
   helpStr = regexprep(helpStr,['\n\%\s*' keyWords{i}],['\n\%\% ' keyWords{i}]);
 end
+
+helpStr = globalReplacements(helpStr,options);
 
 % this is an internal matlab function to generate a stuct for each section
 sections = m2struct(helpStr);
