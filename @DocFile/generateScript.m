@@ -47,6 +47,16 @@ helpStr = addContentByTopic(helpStr,sections,'Remarks',@inline);
 helpStr = addContentByTopic(helpStr,sections,'Example',@pre);
 helpStr = addContentByTopic(helpStr,sections,'See also',@seeAlso);
 
+function in = preSyntax(in,varargin)
+
+% if it is correctly indented then MATLAB 2012a just does the right thing
+if ~any(strfind(in,'%   '))
+  dispPerm(['  wrong syntax identation! <a href="matlab: edit(''' ...
+    docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+end
+
+end
+
 end
 
 function sections = doc2sections(docFile,keyWords,options)
@@ -230,16 +240,6 @@ out = regexprep([newline newline out newline],'\n','\n% ');
 
 end
 
-
-function in = preSyntax(in,varargin)
-
-% if it is correctly indented then MATLAB 2012a just does the right thing
-if ~any(strfind(in,'%   '))
-  dispPerm(['  wrong syntax identation! <a href="matlab: edit(''' ...
-    docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-end
-
-end
 
 function out = makeLinks(in)
 out = strtrim(regexprep(in,'<([^\ ]+)\ ([^>]+)>','<a href="$1">$2</a>'));
