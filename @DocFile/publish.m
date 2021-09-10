@@ -22,20 +22,25 @@ options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
 
 %% prepare files to publish
-for docFile = docFiles
+for k = 1:length(docFiles)
   
-  target = fullfile(options.tmpDir,docFile.targetTemporary);
+  target = fullfile(options.tmpDir,docFiles(k).targetTemporary);
     
-  if fileIsNewer(docFile.sourceFile,target) || options.force
+  if fileIsNewer(docFiles(k).sourceFile,target) || options.force
     
-    disptmp(sprintf('preparing %s\n',docFile.sourceInfo.docName));
+    disptmp(sprintf('preparing %s\n',docFiles(k).sourceInfo.docName));
           
     try
-      if isFunction(docFile) || isClass(docFile)
-        text = generateScript(docFile,options);
+      if isFunction(docFiles(k)) || isClass(docFiles(k))
+        text = generateScript(docFiles(k),options);
       else
-        text = read(docFile.sourceFile);
-
+        text = read(docFiles(k).sourceFile);
+        
+        % extract author
+        [startIndex,endIndex] = regexp(text,'% Author: .*?\n');
+        docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
+        text(startIndex:endIndex) = [];
+        
         % globaly replace formulae, tables, etc.
         text = globalReplacements(text,options);
       end
@@ -43,7 +48,7 @@ for docFile = docFiles
     catch %#ok<CTCH>
       %disptmp(newline);
       dispPerm(['  Error preparing <a href="matlab: edit(''' ...
-        docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+        docFiles(k).sourceFile ''')">',docFiles(k).sourceInfo.docName '</a>']);
       lasterr
       disp(' ');
       continue
@@ -106,8 +111,12 @@ for docFile = docFiles
 
     % update xml file
     if isfield(options,'xml')      
-      options.xml.toolbox.pageSource.Text = strrep(docFile.sourceFile,mtex_path,'');
+      str = strrep(docFile.sourceFile,mtex_path,'');
+      options.xml.toolbox.pageSource.Text = strrep(str,'../examples/','');
       options.xml.toolbox.htmlTarget = [docFile.sourceInfo.docName '.html'];
+      if isfield(docFile.sourceInfo,'author')
+        options.xml.toolbox.author.Text = docFile.sourceInfo.author;
+      end
       struct2xml(options.xml,fullfile(stylePath,'toolbox.xml'));      
     end
     

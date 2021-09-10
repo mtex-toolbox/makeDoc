@@ -15,7 +15,7 @@ function file = DocFile(files,varargin)
 
 if nargin < 1, error('I need at least one file or path!'); end
 
-if ~iscell(files) && isfolder(files)
+if ~iscell(files) && isdir(files)
   files = getFiles(files,'*.m',true);
 end
 

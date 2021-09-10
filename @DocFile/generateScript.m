@@ -14,7 +14,8 @@ function helpStr = generateScript( docFile,options)
 % DocFile/getFormatedDoc DocFile/publish
 
 keyWords = {'Description','Syntax','Input','Output','Options','Flags',...
-  'Class Properties','Dependent Class Properties','Derived Classes','See also','Example'};
+  'Class Properties','Dependent Class Properties','Derived Classes',...
+  'See also','Example', 'References','Authors'};
 
 % split function file docu into sections according to the above key words
 sections = doc2sections(docFile, keyWords,options);
@@ -45,17 +46,56 @@ end
   
 helpStr = addContentByTopic(helpStr,sections,'Remarks',@inline);
 helpStr = addContentByTopic(helpStr,sections,'Example',@pre);
+helpStr = addContentByTopic(helpStr,sections,'Authors',@inline);
+helpStr = addContentByTopic(helpStr,sections,'References',@inline);
 helpStr = addContentByTopic(helpStr,sections,'See also',@seeAlso);
 
 function in = preSyntax(in,varargin)
 
-% if it is correctly indented then MATLAB 2012a just does the right thing
-if ~any(strfind(in,'%   '))
-  dispPerm(['  wrong syntax identation! <a href="matlab: edit(''' ...
-    docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+  % if it is correctly indented then MATLAB 2012a just does the right thing
+  if ~any(strfind(in,'%   '))
+    dispPerm(['  wrong syntax identation! <a href="matlab: edit(''' ...
+      docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+  end
 end
 
+function out = preVarComment(str,varargin)
+% translate variable name / comment pairs into a table
+
+dom = domCreateDocument('html');
+
+table = domAddChild(dom,dom.getDocumentElement,'table',[],...
+  {'class','funcref','width','100%','cellpadding','4','cellspacing','0'});
+
+str = regexprep(str,'%','');
+str = regexp(str,newline,'split');
+varComment = regexp(str,'-','split','once');
+
+for k=1:numel(varComment)
+  if isempty(varComment{k}) || isempty(strtrim(varComment{k}{1}))
+    continue
+  end
+  
+  try
+    row = domAddChild(dom,table,'tr');
+    td = domAddChild(dom,row,'td',[],{'width','100px'});
+    domAddChild(dom,td,'tt',makeLinks(varComment{k}{1}));
+  
+    td = domAddChild(dom,row,'td');
+    domAddChild(dom,td,'tt',makeLinks(varComment{k}{2}));
+  catch
+    dispPerm(['  Error preparing <a href="matlab: edit(''' ...
+      docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
+    varComment{k}
+  end
 end
+
+out = dom2char(dom);
+out = regexprep([newline newline out newline],'\n','\n% ');
+
+end
+
+
 
 end
 
@@ -63,12 +103,14 @@ function sections = doc2sections(docFile,keyWords,options)
 
 % extract help string from function or class file
 %helpStr = helpfunc(file.sourceFile);
-process = helpUtils.helpProcess(1, 1, {docFile.sourceFile});
+%process = helpUtils.helpProcess(1, 1, {docFile.sourceFile});
+process = matlab.internal.help.helpProcess(1, 1, {docFile.sourceFile});
 process.getHelpText;
 helpStr = process.helpStr;
 
 if isempty(helpStr)
-  process = helpUtils.helpProcess(0,1, {docFile.sourceFile});
+  %process = helpUtils.helpProcess(0,1, {docFile.sourceFile});
+  process = matlab.internal.help.helpProcess(0, 1, {docFile.sourceFile});
   process.getHelpText;
   helpStr = process.helpStr;  
 end
@@ -203,43 +245,6 @@ out = regexprep(out,'\n( )*','\n');
 out = regexprep(out,'\n(\n%( )*\n)*','\n');
 
 end
-
-function out = preVarComment(str,varargin)
-% translate variable name / comment pairs into a table
-
-dom = domCreateDocument('html');
-
-table = domAddChild(dom,dom.getDocumentElement,'table',[],...
-  {'class','funcref','width','100%','cellpadding','4','cellspacing','0'});
-
-str = regexprep(str,'%','');
-str = regexp(str,newline,'split');
-varComment = regexp(str,'-','split','once');
-
-for k=1:numel(varComment)
-  if isempty(varComment{k}) || isempty(strtrim(varComment{k}{1}))
-    continue
-  end
-  
-  try
-    row = domAddChild(dom,table,'tr');
-    td = domAddChild(dom,row,'td',[],{'width','100px'});
-    domAddChild(dom,td,'tt',makeLinks(varComment{k}{1}));
-  
-    td = domAddChild(dom,row,'td');
-    domAddChild(dom,td,'tt',makeLinks(varComment{k}{2}));
-  catch
-    dispPerm(['  Error preparing <a href="matlab: edit(''' ...
-      docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-    varComment{k}
-  end
-end
-
-out = dom2char(dom);
-out = regexprep([newline newline out newline],'\n','\n% ');
-
-end
-
 
 function out = makeLinks(in)
 out = strtrim(regexprep(in,'<([^\ ]+)\ ([^>]+)>','<a href="$1">$2</a>'));
