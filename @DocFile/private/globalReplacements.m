@@ -1,20 +1,30 @@
-function outstr = globalReplacements(instr,options)
+function str = globalReplacements(str,options)
 
-
-% instr = regexp(instr,'@(\w*)(?@numel(regexp(which(''$1''),''$1''))>1)','[[$1_index.html,$1]]');
-
-%outstr = regexprep(instr,'@(\w*)','<$1.$1.html $1>' );
-outstr = makeClassLinks(instr);
-outstr = makeTable(outstr);
-outstr = makeBox(outstr);
 
 % translate latex to mathJax
 %regexprep(outstr,'\$(.+?)\$','<html>x$1x</html>')
 if strcmpi(options.LaTex,'mathJax')
-  outstr = regexprep(outstr,'(?<!\$)\$(?!\$)(.+?)\$','\\($1\\)');
-  outstr = regexprep(outstr,'\$\$(.+?)\$\$','\\[$1\\]');
+  str = regexprep(str,'(?<!\$)\$(?!\$)(.+?)\$','\\($1\\)');
+  str = regexprep(str,'\$\$(.+?)\$\$','\\[$1\\]');
+else
+  str = strrep(str,'\mathbb','');
+  %str = strrep(str,'\mathtt','');
+  %str = strrep(str,'\mathcal','');
+  str = strrep(str,'<strong>','');
+  str = strrep(str,'</strong>','');
+  str = strrep(str,'\lVert','\Vert');
+  str = strrep(str,'\rVert','\Vert');
+
+  % replace binom, only supported by amsmath
+  str=regexprep(str,'\\binom\{(.+?)\}\{(.+?)\}','\{$1 \\choose $2\}');
 end
 
+% instr = regexp(instr,'@(\w*)(?@numel(regexp(which(''$1''),''$1''))>1)','[[$1_index.html,$1]]');
+
+%outstr = regexprep(instr,'@(\w*)','<$1.$1.html $1>' );
+str = makeClassLinks(str);
+str = makeTable(str);
+str = makeBox(str);
 
 function str = makeClassLinks(str)
 
