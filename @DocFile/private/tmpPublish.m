@@ -36,5 +36,5 @@ recycle(state);
 
 %   xml = xmlwrite(dom)
 %   t = regexp(xml,'(?<=<text>).*?(?=</text>)','match');
-% text = dom.getElementsByTagName('text').item(0);
-text = dom.getDocumentElement.getFirstChild;
+text = dom.getElementsByTagName('text').item(0);
+%text = dom.getDocumentElement;
