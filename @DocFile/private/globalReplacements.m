@@ -19,6 +19,9 @@ else
   str=regexprep(str,'\\binom\{(.+?)\}\{(.+?)\}','\{$1 \\choose $2\}');
 end
 
+% remove code issue marks
+str = regexprep(str,'\%#ok<.*?>','');
+
 % instr = regexp(instr,'@(\w*)(?@numel(regexp(which(''$1''),''$1''))>1)','[[$1_index.html,$1]]');
 
 %outstr = regexprep(instr,'@(\w*)','<$1.$1.html $1>' );

@@ -41,7 +41,7 @@ for k = 1:length(docFiles)
         docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
         text(startIndex:endIndex) = [];
         
-        % globaly replace formulae, tables, etc.
+        % globally replace formulae, tables, etc.
         text = globalReplacements(text,options);
       end
       

@@ -1,5 +1,5 @@
 function makeHelpToc(docFiles, mainFile, outFile )
-% make a toc for a matlab help
+% make a toc for a MATLAB help
 %
 % Syntax
 %
@@ -26,7 +26,7 @@ end
 
 
 function makeToc(dom,parentNode,file,docFiles,Label)
-% recursevly walk through directories with a toc file
+% recursively walk through directories with a toc file
 
 if nargin < 5, Label = ''; end
 

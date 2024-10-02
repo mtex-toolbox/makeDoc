@@ -21,7 +21,7 @@ if ~isempty(hasKeyword)
     Syntax = str(10:lineBreak(1));
     isFun = true;
   else
-    lastLineBreak = lineBreak(lineBreak<hasKeyword(1));    
+    lastLineBreak = min(lineBreak(lineBreak<hasKeyword(1)));    
     lineTillFuncStr = str(lastLineBreak+1:hasKeyword(1)+7);
     
     nextLineBreak = lineBreak(lineBreak > hasKeyword(1));

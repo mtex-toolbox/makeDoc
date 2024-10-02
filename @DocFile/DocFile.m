@@ -2,7 +2,7 @@ function file = DocFile(files,varargin)
 % constructor 
 %
 % Syntax
-%   files = DocFile(path) - recusively adds all files in sub--dirs
+%   files = DocFile(path) - recursively adds all files in sub--dirs
 %   files = DocFile({fname,fname,...}) - adds a given cell--array of full--fill names 
 %   files = DocFile('function') - add a single function which is on search path
 %
@@ -15,7 +15,7 @@ function file = DocFile(files,varargin)
 
 if nargin < 1, error('I need at least one file or path!'); end
 
-if ~iscell(files) && isdir(files)
+if ~iscell(files) && isfolder(files)
   files = getFiles(files,'*.m',true);
 end
 
@@ -62,7 +62,7 @@ else
   sourceInfo.docName = sourceInfo.name;
 end
 
-% we nedd to replace '.' by '__' since Matlab is not able to publish files
+% we need to replace '.' by '__' since MATLAB is not able to publish files
 % with a '.' in it
 currentFile.targetTemporary = ['script_' regexprep(sourceInfo.docName,'\.','__'),sourceInfo.ext];
 
