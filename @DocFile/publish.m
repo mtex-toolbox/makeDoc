@@ -12,6 +12,10 @@ function [html_out,success] = publish( docFiles, options)
 %  options.publishSettings - struct like <matlab:doc('publish') publish>
 %  options.xmlDom
 %  options.LaTex   - 'Matlab', 'mathJax'
+%  options.logFile - path to a persistent log file recording which file is
+%                     being processed and any errors (default:
+%                     <outDir>/publish_log.txt). Written to disk
+%                     immediately so the log survives a MATLAB crash.
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
@@ -20,6 +24,11 @@ if isempty(dir(options.tmpDir)), mkdir(options.tmpDir); end
 if isempty(dir(options.outDir)), mkdir(options.outDir); end
 options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
+options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'));
+
+logFile = options.logFile;
+nErrors = 0;
+writeLog(logFile,sprintf('==== publish run started: %d file(s) ====',numel(docFiles)));
 
 %% prepare files to publish
 for k = 1:length(docFiles)
@@ -29,38 +38,46 @@ for k = 1:length(docFiles)
   if fileIsNewer(docFiles(k).sourceFile,target) || options.force
     
     disptmp(sprintf('preparing %s\n',docFiles(k).sourceInfo.docName));
-          
+    writeLog(logFile,sprintf('START prepare  %s  (%s)', ...
+      docFiles(k).sourceInfo.docName,docFiles(k).sourceFile));
+
     try
       if isFunction(docFiles(k)) || isClass(docFiles(k))
         text = generateScript(docFiles(k),options);
       else
         text = read(docFiles(k).sourceFile);
-        
+
         % extract author
         [startIndex,endIndex] = regexp(text,'% Author: .*?\n');
         docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
         text(startIndex:endIndex) = [];
-        
+
         % globally replace formulas, tables, etc.
         text = globalReplacements(text,options);
       end
-      
-    catch %#ok<CTCH>
+
+    catch err
       %disptmp(newline);
       system(['touch ' docFiles(k).sourceFile]);
       dispPerm(['  Error preparing <a href="matlab: edit(''' ...
         docFiles(k).sourceFile ''')">',docFiles(k).sourceInfo.docName '</a>']);
-      lasterr
+      disp(err.message);
       disp(' ');
+      writeLog(logFile,sprintf('ERROR prepare  %s  (%s)\n%s', ...
+        docFiles(k).sourceInfo.docName,docFiles(k).sourceFile, ...
+        getReport(err,'extended','hyperlinks','off')));
+      nErrors = nErrors + 1;
       continue
     end
-    
+
     fid = fopen(target,'w');
     if fid > 0
       fwrite(fid,text);
       fclose(fid);
     end
-    
+
+    writeLog(logFile,sprintf('OK prepare  %s',docFiles(k).sourceInfo.docName));
+
     disptmp('');
   end
 end
@@ -102,10 +119,12 @@ for docFile = docFiles
   if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force, continue; end
     
   disptmp([ 'publishing: ' docFile.sourceInfo.docName])
-  
+  writeLog(logFile,sprintf('START publish  %s  (%s)', ...
+    docFile.sourceInfo.docName,docFile.sourceFile));
+
   % update xml file
   stylePath = fileparts(pubSettings.stylesheet);
-  
+
   try
           
     evalin('base','clear variables'); close all;
@@ -183,31 +202,40 @@ for docFile = docFiles
         end
 
         if keep
-          movefile(newFile,oldFile,'f'); 
+          movefile(newFile,oldFile,'f');
         else
           delete(newFile);
         end
       end
-    end    
-    
+    end
+
+    writeLog(logFile,sprintf('OK publish  %s',docFile.sourceInfo.docName));
+
   catch e
-    
+
     success = false;
-    
-    % remove 
-    delete([options.outDir filesep 'script_*']) 
+
+    % remove
+    delete([options.outDir filesep 'script_*'])
     %disptmp('');
     system(['touch ' docFile.sourceFile]);
     dispPerm(['  Error publishing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-            
+
     f = find(strncmp(docFile.targetTemporary,{e.stack.name},length(docFile.targetTemporary)-2));
+    errLoc = '';
     if ~isempty(f)
       stack = e.stack(f);
       dispPerm(['   (in file <a href="matlab: opentoline(''' ...
         docFile.sourceFile ''',' num2str(stack.line(1)) ',0)">' docFile.sourceInfo.name '</a>)']);
       fprintf('   %s\n' ,regexprep(e.message,'[\n\r]',''));
+      errLoc = sprintf(' at line %d',stack.line(1));
     end
+
+    writeLog(logFile,sprintf('ERROR publish  %s  (%s)%s\n%s', ...
+      docFile.sourceInfo.docName,docFile.sourceFile,errLoc, ...
+      getReport(e,'extended','hyperlinks','off')));
+    nErrors = nErrors + 1;
     
   end
   
@@ -216,10 +244,28 @@ end
 if isfield(options,'xmlDom'), mytoolbox.removeChild(node); end
 cd(oldDir);
 
+writeLog(logFile,sprintf('==== publish run finished: %d error(s) ====',nErrors));
+
 end
 
 function opt = setDefault(opt,field,value)
 
 if ~isfield(opt,field), opt.(field) = value; end
+
+end
+
+function writeLog(logFile,msg)
+% append a timestamped message to the publish log
+%
+% opens, writes and closes the file for every call (rather than keeping a
+% handle open) so entries are flushed to disk immediately - this way the
+% log survives even if MATLAB crashes mid-run, instead of only living in
+% the command window
+
+fid = fopen(logFile,'a');
+if fid > 0
+  fprintf(fid,'[%s] %s\n',datestr(now,'yyyy-mm-dd HH:MM:SS'),msg);
+  fclose(fid);
+end
 
 end

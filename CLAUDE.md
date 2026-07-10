@@ -147,6 +147,15 @@ MTEX itself (see `help/docGuide/UsersGuide/WritingDocumentation.m`), with
    `matlab:`-scheme clickable link to the offending source line, and the
    source file's mtime is `touch`ed so it's retried next run — the whole
    batch does not abort.
+5. Every "starting file X" / "OK" / "ERROR" event is additionally appended,
+   with a timestamp, to a persistent log file (`options.logFile`, default
+   `<outDir>/publish_log.txt`) via the local `writeLog` helper. Each call
+   opens, writes, and closes the file rather than keeping a handle open, so
+   entries hit disk immediately — the log (including which file was last
+   being processed) survives even a hard MATLAB crash, not just caught
+   errors. `ERROR` lines include the full `MException` report
+   (`getReport(..., 'extended')`), not just the one-line message shown in
+   the command window.
 
 ## Authoring conventions for documented `.m` files (what the code parses)
 
