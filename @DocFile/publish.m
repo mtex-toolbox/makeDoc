@@ -41,12 +41,13 @@ for k = 1:length(docFiles)
         docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
         text(startIndex:endIndex) = [];
         
-        % globally replace formulae, tables, etc.
+        % globally replace formulas, tables, etc.
         text = globalReplacements(text,options);
       end
       
     catch %#ok<CTCH>
       %disptmp(newline);
+      system(['touch ' docFiles(k).sourceFile]);
       dispPerm(['  Error preparing <a href="matlab: edit(''' ...
         docFiles(k).sourceFile ''')">',docFiles(k).sourceInfo.docName '</a>']);
       lasterr
@@ -93,7 +94,7 @@ for docFile = docFiles
   
   % reapply settings
   setappdata(0,'mtex',settings);
-  
+ 
   % final html name with script_xxx_xxx
   htmlTarget = fullfile(options.outDir,[docFile.sourceInfo.docName '.html']);
 
@@ -108,7 +109,14 @@ for docFile = docFiles
   try
           
     evalin('base','clear variables'); close all;
+    evalin('base','format short');
 
+    % reset plotting convention
+    pC = plottingConvention;
+    pC.makeDefault;
+
+    rng(2,"twister"); % ensure we always have the same random numbers
+    
     % update xml file
     if isfield(options,'xml')      
       str = strrep(docFile.sourceFile,mtex_path,'');
@@ -127,6 +135,10 @@ for docFile = docFiles
     [~,targetName] = fileparts(html_out);
     
     if 1
+      % remove overview png
+      pngFile = fullfile(options.outDir,[targetName '.png']);
+      if exist(pngFile,'file'), delete(pngFile); end      
+      
       % crop all images
       pngTarget = fullfile(options.outDir,[targetName '*.png']);
       if ~isempty(dir(pngTarget))
@@ -136,8 +148,45 @@ for docFile = docFiles
       % move image files to new directory
       attache = dir(fullfile(options.outDir,[targetName '*.*']));
       for n=1:numel(attache)
-        newName = regexprep(attache(n).name,targetName,docFile.sourceInfo.docName);
-        movefile(fullfile(options.outDir,attache(n).name),fullfile(options.imageDir,newName),'f');
+        newFile = fullfile(options.outDir,attache(n).name);
+        oldFile = fullfile(options.imageDir,regexprep(attache(n).name,targetName,docFile.sourceInfo.docName));
+
+        if exist(oldFile,"file")
+          try
+            [A,map] = imread(newFile);
+            if numel(map)>1, A = ind2rgb(A,map); end
+            [B,map] = imread(oldFile);
+            if numel(map)>1, B = ind2rgb(B,map); end
+            
+            if all(size(A)==size(B))
+              keep = norm(double(A-B),"fro") / norm(double(A),"fro")  > 0.05;
+            else
+
+              fftA = abs(fft2(A)) ./ numel(A);
+              fftB = abs(fft2(B)) ./ numel(B);
+              s = round(min([size(fftA);size(fftB)])/2.1);
+        
+              delta1 = norm(fftA(1:s(1),1:s(2),:)-fftB(1:s(1),1:s(2),:),"fro") / ...
+                norm(fftA(1:s(1),1:s(2),:),"fro");
+
+              [~,delta2] = imregcorr(B,A);
+
+              keep = delta1 > 5e-2 && delta2 < 0.6;
+            end
+          catch
+            keep = true;
+          end
+          %[delta1,delta2]
+
+        else
+          keep = true;
+        end
+
+        if keep
+          movefile(newFile,oldFile,'f'); 
+        else
+          delete(newFile);
+        end
       end
     end    
     
@@ -148,6 +197,7 @@ for docFile = docFiles
     % remove 
     delete([options.outDir filesep 'script_*']) 
     %disptmp('');
+    system(['touch ' docFile.sourceFile]);
     dispPerm(['  Error publishing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
             

@@ -32,11 +32,15 @@ str = makeBox(str);
 function str = makeClassLinks(str)
 
 [start, stop] = regexp(str,'@(\w*)');
- 
+
 for k=numel(start):-1:1
   fhandle = str(start(k)+1:stop(k));
-  if numel(regexp(which(fhandle),fhandle))>1
+
+  file = which(fhandle);
+  if numel(regexp(file,fhandle))>1
     str =  [str(1:start(k)-1) '<' fhandle '.' fhandle '.html ' fhandle '>' str(stop(k)+1:end)];
+  elseif numel(regexp(file,fhandle))>0 && numel(regexp(file,'mtex'))>0
+    str =  [str(1:start(k)-1) '<' fhandle '.html ' fhandle '>' str(stop(k)+1:end)];
   end
 end
 

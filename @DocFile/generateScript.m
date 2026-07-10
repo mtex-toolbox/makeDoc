@@ -34,7 +34,7 @@ helpStr = addContentByTopic(helpStr,sections,'Description',@inline);
 [helpStr, isNew ]= addContentByTopic(helpStr,sections,'Syntax',@preSyntax);
 [isFunc, Syntax] = isFunction(docFile);
 
-% if no explicite syntax was given we may generate one automatically
+% if no explicit syntax was given we may generate one automatically
 if ~isNew && isFunc
   helpStr = [addTitle(helpStr,'Syntax') newline preSyntax(Syntax,sections)];
 end
@@ -45,7 +45,7 @@ for top = keyWords(3:9)
 end
   
 helpStr = addContentByTopic(helpStr,sections,'Remarks',@inline);
-helpStr = addContentByTopic(helpStr,sections,'Example',@pre);
+helpStr = addContentByTopic(helpStr,sections,'Example',@preExample);
 helpStr = addContentByTopic(helpStr,sections,'Authors',@inline);
 helpStr = addContentByTopic(helpStr,sections,'References',@inline);
 helpStr = addContentByTopic(helpStr,sections,'See also',@seeAlso);
@@ -119,9 +119,9 @@ end
 docName = docFile.sourceInfo.docName;
 %Title = regexprep(docName,'(\w*)\.(\w*)', ...
 %  ['$2' newline '  \(method of <$1_index.html $1>\)' newline ' % ']);
-Title = regexprep(docName,'(\w*)\.(\w*)', ['$2' newline ' % ']);
+% Title = regexprep(docName,'(\w*)\.(\w*)', ['$2' newline '% ']);
 
-helpStr = [' % ' Title  newline  helpStr];
+helpStr = ['%% ' docName newline '%%' newline '% ' strtrim(helpStr)];
 
 % add a '%' to each line
 helpStr = regexprep(helpStr,'(?<=^|\n) ','%');
@@ -173,7 +173,7 @@ end
 
 function content = getContentByTopic(sections,topic)
 
-topic = regexptranslate('escape',topic);
+%topic = regexptranslate('escape',topic);
 % regexpi({sections.title},topic,'start');
 
 topicFound = false;
@@ -205,6 +205,29 @@ function out = seeAlso(in,varargin)
 out = regexprep(inline(in),'/','.');
 out = regexprep(out,'([\w\.s]*)','<$1.html $1>');
 out = regexprep(out,'\n\n','\n%');
+% ensure we have exactly one white space after %
+out = regexprep(out, '^[ \t]*%[ \t]+', '% ', 'lineanchors');
+end
+
+
+function out = preExample(in,varargin)
+
+% remove first new line
+if in(1)==newline, in(1) = []; end
+
+% remove leading empty lines
+out = regexprep(in, '^(?:[ \t]*%[ \t]*(?:\r?\n|$))+', '');
+
+% remove trailing empty lines
+out = regexprep(out, '(?:\r?\n[ \t]*%[ \t]*(?:\r?\n|$))+$', '');
+
+out = regexprep(out, '^[ \t]*%[ \t]*$', '%  %%', 'lineanchors');
+
+%out = strrep(in,'%   ','');
+out = regexprep(out,'^\s*%\s*','', 'lineanchors');
+%out = regexprep(in, '^[ \t]*%[ \t]*', '', 'lineanchors');
+
+out = [newline out];
 end
 
 
