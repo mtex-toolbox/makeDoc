@@ -159,53 +159,27 @@ for docFile = docFiles
       if exist(pngFile,'file'), delete(pngFile); end      
       
       % crop all images
+      %
+      % -strip together with excluding the date and time chunks keeps
+      % ImageMagick from stamping a fresh timestamp into every file, which
+      % would make even an unchanged figure differ byte-wise from the stored
+      % one on every run
       pngTarget = fullfile(options.outDir,[targetName '*.png']);
       if ~isempty(dir(pngTarget))
-        unix(['mogrify -trim ' pngTarget]);
+        unix(['mogrify -trim -strip -define png:exclude-chunk=date,time ' pngTarget]);
       end
-    
+
       % move image files to new directory
+      %
+      % the new image always replaces the stored one - deciding whether a
+      % re-render is a real change is left to the web repository, see
+      % tools/revert-unchanged-images.py there
       attache = dir(fullfile(options.outDir,[targetName '*.*']));
       for n=1:numel(attache)
         newFile = fullfile(options.outDir,attache(n).name);
         oldFile = fullfile(options.imageDir,regexprep(attache(n).name,targetName,docFile.sourceInfo.docName));
 
-        if exist(oldFile,"file")
-          try
-            [A,map] = imread(newFile);
-            if numel(map)>1, A = ind2rgb(A,map); end
-            [B,map] = imread(oldFile);
-            if numel(map)>1, B = ind2rgb(B,map); end
-            
-            if all(size(A)==size(B))
-              keep = norm(double(A-B),"fro") / norm(double(A),"fro")  > 0.05;
-            else
-
-              fftA = abs(fft2(A)) ./ numel(A);
-              fftB = abs(fft2(B)) ./ numel(B);
-              s = round(min([size(fftA);size(fftB)])/2.1);
-        
-              delta1 = norm(fftA(1:s(1),1:s(2),:)-fftB(1:s(1),1:s(2),:),"fro") / ...
-                norm(fftA(1:s(1),1:s(2),:),"fro");
-
-              [~,delta2] = imregcorr(B,A);
-
-              keep = delta1 > 5e-2 && delta2 < 0.6;
-            end
-          catch
-            keep = true;
-          end
-          %[delta1,delta2]
-
-        else
-          keep = true;
-        end
-
-        if keep
-          movefile(newFile,oldFile,'f');
-        else
-          delete(newFile);
-        end
+        movefile(newFile,oldFile,'f');
       end
     end
 

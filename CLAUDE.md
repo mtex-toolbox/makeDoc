@@ -84,6 +84,9 @@ Method files (`@DocFile/*.m`) — think of these as the class's public API:
 - `deadlink.m` — scans generated HTML for `href="...html"` links that don't
   resolve to an existing output file (documentation link checker).
 - `exclude.m` — filters a `DocFile` array by substring match on `sourceFile`.
+- `select.m` — the counterpart: *keeps* only the entries matching one of the
+  given substrings. Used by the homepage's `makeDoc('file',…)` to restrict a
+  build to a single page or folder.
 - `copy.m` — copies underlying source files (non-`.m` assets) to a target dir.
 - `private/` — internal helpers not part of the public method API:
   - `globalReplacements.m` — toolbox-wide text substitutions applied to
@@ -139,10 +142,13 @@ MTEX itself (see `help/docGuide/UsersGuide/WritingDocumentation.m`), with
    `force`): reset MATLAB app state/plotting convention/RNG seed for
    reproducibility, optionally update `resources/style/toolbox.xml` with
    per-page source/author metadata, call MATLAB's built-in `publish` on the
-   temp script, move the resulting HTML to `docName.html`, then
-   diff-and-crop generated PNGs against previously published ones (pixel/FFT
-   comparison) so unchanged figures aren't needlessly overwritten (keeps git
-   diffs small across doc rebuilds).
+   temp script, move the resulting HTML to `docName.html`, then trim each
+   generated PNG (`mogrify -trim -strip -define png:exclude-chunk=date,time`
+   — stripping the timestamp chunks so an unchanged figure stays byte-identical
+   across runs) and move it over the stored copy unconditionally. Deciding
+   whether a re-render is a real change is *not* done here: the web repository
+   scores the resulting git diff with `tools/revert-unchanged-images.py` and
+   restores the images that only differ cosmetically.
 4. Errors during either phase are caught per-file, logged with a
    `matlab:`-scheme clickable link to the offending source line, and the
    source file's mtime is `touch`ed so it's retried next run — the whole
