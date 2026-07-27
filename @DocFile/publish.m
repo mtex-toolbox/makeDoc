@@ -16,6 +16,9 @@ function [html_out,success] = publish( docFiles, options)
 %                     being processed and any errors (default:
 %                     <outDir>/publish_log.txt). Written to disk
 %                     immediately so the log survives a MATLAB crash.
+%  options.showFigures - whether the figures the published code creates are
+%                     shown on screen (default: true). Set to false to
+%                     publish with hidden figures.
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
@@ -25,6 +28,19 @@ if isempty(dir(options.outDir)), mkdir(options.outDir); end
 options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
 options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'));
+options = setDefault(options,'showFigures',true);
+
+% keep the figures the published code creates off the screen
+%
+% publish snapshots them with print, which does not need them visible, so
+% they can just as well stay hidden instead of flashing up one after the
+% other and taking the focus away for the length of a build. onCleanup
+% restores the setting even when publishing is interrupted.
+if ~options.showFigures
+  oldVisible = get(0,'DefaultFigureVisible');
+  set(0,'DefaultFigureVisible','off');
+  restoreVisible = onCleanup(@() set(0,'DefaultFigureVisible',oldVisible));
+end
 
 logFile = options.logFile;
 nErrors = 0;

@@ -138,6 +138,11 @@ MTEX itself (see `help/docGuide/UsersGuide/WritingDocumentation.m`), with
    read + author-line extraction + `globalReplacements.m` for plain doc
    pages — and write it to `options.tmpDir`.
 2. Copy general assets (CSS/JS/icons) into `options.outDir`.
+   With `options.showFigures = false`, `DefaultFigureVisible` is switched off
+   for the run (restored via `onCleanup`) so the published code's figures stay
+   off screen — `publish` snapshots them with `print`, which does not need
+   them visible. This relies on `mtexFigure` honouring that MATLAB default
+   instead of forcing `Visible` to `'on'`.
 3. For each doc file whose source is newer than its HTML target (or
    `force`): reset MATLAB app state/plotting convention/RNG seed for
    reproducibility, optionally update `resources/style/toolbox.xml` with
