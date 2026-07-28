@@ -42,8 +42,11 @@ publish(docFiles, 'mainFile','docGuide', 'format','html', ...
   `private/` dirs); `DocFile({...})` wraps an explicit file list.
 - `publish(docFiles, options)` (the `@DocFile/publish.m` method, not
   MATLAB's built-in `publish`) does the actual work per file: only
-  re-publishes when the source is newer than the target (`fileIsNewer`) or
-  `options.force` is set.
+  re-publishes when the source is newer than the target (`fileIsNewer`), or
+  `options.force` is set, or the file's `docName` appears in
+  `options.forceDoc` — a cell array letting the caller force individual pages
+  without forcing the whole run (the MTEX website uses it to rebuild pages
+  whose figures are uncommitted; see `../web/CLAUDE.md`).
 - Output artifacts (`help/html`, `help/tmp`, `help/helpsearch`, `help/help.jar`,
   `help/helptoc.xml`, `examples/html`, `examples/demos.xml`) are all
   generated/ignored (see `.hgignore`) — never hand-edit them.

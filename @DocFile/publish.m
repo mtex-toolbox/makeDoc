@@ -9,6 +9,8 @@ function [html_out,success] = publish( docFiles, options)
 %  options.outDir  -
 %  options.tmpDir  -
 %  options.force      -
+%  options.forceDoc   - cell array of doc names to republish regardless of
+%                     timestamps, in addition to whatever force selects
 %  options.publishSettings - struct like <matlab:doc('publish') publish>
 %  options.xmlDom
 %  options.LaTex   - 'Matlab', 'mathJax'
@@ -27,6 +29,7 @@ if isempty(dir(options.tmpDir)), mkdir(options.tmpDir); end
 if isempty(dir(options.outDir)), mkdir(options.outDir); end
 options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
+options = setDefault(options,'forceDoc',{});
 options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'));
 options = setDefault(options,'showFigures',true);
 
@@ -51,8 +54,9 @@ for k = 1:length(docFiles)
   
   target = fullfile(options.tmpDir,docFiles(k).targetTemporary);
     
-  if fileIsNewer(docFiles(k).sourceFile,target) || options.force
-    
+  if fileIsNewer(docFiles(k).sourceFile,target) || options.force || ...
+      any(strcmp(docFiles(k).sourceInfo.docName,options.forceDoc))
+
     disptmp(sprintf('preparing %s\n',docFiles(k).sourceInfo.docName));
     writeLog(logFile,sprintf('START prepare  %s  (%s)', ...
       docFiles(k).sourceInfo.docName,docFiles(k).sourceFile));
@@ -132,7 +136,8 @@ for docFile = docFiles
   htmlTarget = fullfile(options.outDir,[docFile.sourceInfo.docName '.html']);
 
   % nothing to do
-  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force, continue; end
+  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force && ...
+      ~any(strcmp(docFile.sourceInfo.docName,options.forceDoc)), continue; end
     
   disptmp([ 'publishing: ' docFile.sourceInfo.docName])
   writeLog(logFile,sprintf('START publish  %s  (%s)', ...
