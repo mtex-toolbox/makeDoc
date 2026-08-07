@@ -44,6 +44,35 @@ for k=numel(start):-1:1
   end
 end
 
+function marker = tableMarkers(instr,lineBreak)
+% positions of the ' || ' separators that actually delimit table cells
+%
+% A table row has the form || abc || abc || abc || and therefore carries at
+% least two separators. A line with only a single ' || ' is ordinary text -
+% 'x || a' for a crystal axis, or a logical or inside a code sample - and
+% must be left untouched.
+%
+% This has to be filtered out here rather than in makeTable below: a lone
+% separator produces no table row, but it still reaches
+%
+%   instr = [instr(1:oldRowBreak) newTable instr(afterLineBreak:end)]
+%
+% which replaces the whole line by an empty <table>, i.e. the line silently
+% disappears from the published page.
+
+marker = regexp(instr,' \|\|\s') + 1;
+
+if isempty(marker), return; end
+
+% the line every separator sits on
+lineId = sum(lineBreak(:) < marker(:).',1).' + 1;
+
+% keep only those on a line with at least two of them
+nPerLine = accumarray(lineId,1);
+marker = marker(nPerLine(lineId) > 1);
+
+
+% -------------------------------------------------------------------------
 function outstr = makeTable(instr)
 %
 % format tables of the form || abc || abc || abc ||
@@ -55,7 +84,7 @@ lineBreak = regexp(instr,'\n');
 [dom,doc] = domCreateDocument('html');
 table = domAddChild(dom,doc,'table',[],{'class','usertable'});
 
-tableMarker = regexp(instr,' \|\|\s')+1;
+tableMarker = tableMarkers(instr,lineBreak);
 oldRowBreak = [];
 while ~isempty(tableMarker)
   beforeLineBreak = max(lineBreak(lineBreak<tableMarker(1)));
@@ -102,9 +131,9 @@ while ~isempty(tableMarker)
       instr =  [instr(1:oldRowBreak)  newTable instr(afterLineBreak:end)];
       
       oldRowBreak = [];
-      
-      tableMarker = regexp(instr,'\|\|');
+
       lineBreak = regexp(instr,'\n');
+      tableMarker = tableMarkers(instr,lineBreak);
       
       [dom,doc] = domCreateDocument('html');
       table = domAddChild(dom,doc,'table',[],{'class','usertable'});
