@@ -61,32 +61,102 @@ end
 
 function out = preVarComment(str,varargin)
 % translate variable name / comment pairs into a table
+%
+% The description of a variable may be wrapped over several lines
+%
+%   Length   - fixed length of the scale bar, if not given a nice round
+%              length close to 10% of the map width is used
+%   Location - corner of the map the bar is drawn in:
+%              'sw' (default), 'se', 'nw', 'ne'
+%
+% Such a follow up line continues the description of the preceding variable
+% and must not become a table row of its own. It is recognized by starting
+% behind the '-' of that variable, or by containing no '-' at all - the
+% second criterion is needed since a wrapped line may well contain a dash,
+% as the first one above does.
 
 dom = domCreateDocument('html');
 
 table = domAddChild(dom,dom.getDocumentElement,'table',[],...
   {'class','funcref','width','100%','cellpadding','4','cellspacing','0'});
 
-str = regexprep(str,'%','');
-str = regexp(str,newline,'split');
-varComment = regexp(str,'-','split','once');
+% remove the comment character starting each line - in contrast to removing
+% every '%' this keeps percent signs inside the text alive
+lines = regexp(regexprep(str,'^[ \t]*%','','lineanchors'),newline,'split');
 
-for k=1:numel(varComment)
-  if isempty(varComment{k}) || isempty(strtrim(varComment{k}{1}))
-    continue
+% the number of leading blanks and the position of the '-' separating
+% variable name and description, 0 if the line does not start with a name
+indent = cellfun(@(l) numel(regexp(l,'^[ \t]*','match','once')),lines);
+dashPos = cellfun(@(l) numel(regexp(l,'^[ \t]*[^-\s][^-]*(?=-)','match','once')),lines);
+dashPos(dashPos > 0) = dashPos(dashPos > 0) + 1;
+
+% a variable name may start behind the '-' of the preceding variable if it
+% belongs to a nested list, e.g. to the fields of an output struct - those
+% come in groups sharing the indentation and the column of the '-'
+isNested = [dashPos(1:end-1) > 0 & dashPos(1:end-1) == dashPos(2:end) & ...
+  indent(1:end-1) == indent(2:end), false];
+
+% split the section into rows of variable name and description
+varComment = cell(0,2);
+isText = false(0,1); % row without any variable name - spans the full width
+descCol = 0;         % the '-' of the description we are allowed to continue
+
+for k = 1:numel(lines)
+
+  line = strtrim(lines{k});
+
+  if isempty(line) % a blank line ends the description
+
+    descCol = 0;
+
+  elseif dashPos(k) > 0 && (~descCol || indent(k) < descCol || isNested(k))
+
+    % a new variable
+    varComment(end+1,:) = {lines{k}(1:dashPos(k)-1), ...
+      lines{k}(dashPos(k)+1:end)}; %#ok<AGROW>
+    isText(end+1) = false; %#ok<AGROW>
+    descCol = dashPos(k);
+
+  elseif descCol && line(1) == '-'
+
+    % an alternative description for the same variable - leave the name
+    % column empty so that it stays aligned with the row above
+    varComment(end+1,:) = {'',line(2:end)}; %#ok<AGROW>
+    isText(end+1) = false; %#ok<AGROW>
+
+  elseif descCol
+
+    % a wrapped line continues the description of the preceding variable
+    varComment{end,2} = [strtrim(varComment{end,2}) ' ' line];
+
+  else
+
+    % plain text within the section - give it the full width
+    varComment(end+1,:) = {'',line}; %#ok<AGROW>
+    isText(end+1) = true; %#ok<AGROW>
+    descCol = inf; % it may be continued, but any variable ends it
+
   end
-  
+end
+
+for k = 1:size(varComment,1)
+
   try
     row = domAddChild(dom,table,'tr');
-    td = domAddChild(dom,row,'td',[],{'width','100px'});
-    domAddChild(dom,td,'tt',makeLinks(varComment{k}{1}));
-  
-    td = domAddChild(dom,row,'td');
-    domAddChild(dom,td,'tt',makeLinks(varComment{k}{2}));
+
+    if isText(k)
+      td = domAddChild(dom,row,'td',[],{'colspan','2'});
+    else
+      td = domAddChild(dom,row,'td',[],{'width','100px'});
+      domAddChild(dom,td,'tt',makeLinks(varComment{k,1}));
+
+      td = domAddChild(dom,row,'td');
+    end
+    domAddChild(dom,td,'tt',makeLinks(varComment{k,2}));
   catch
     dispPerm(['  Error preparing <a href="matlab: edit(''' ...
       docFile.sourceFile ''')">',docFile.sourceInfo.docName '</a>']);
-    varComment{k}
+    varComment(k,:) %#ok<NOPRT>
   end
 end
 

@@ -178,7 +178,14 @@ MTEX itself (see `help/docGuide/UsersGuide/WritingDocumentation.m`), with
   `Input`, `Output`, `Options`, `Flags`, `Class Properties`,
   `Dependent Class Properties`, `Derived Classes`, `See also`, `Example`,
   `References`, `Authors`). `Input`/`Output`/etc. lines of the form
-  `varname - comment` are rendered as a two-column table.
+  `varname - comment` are rendered as a two-column table
+  (`preVarComment`). A comment may be wrapped over several lines: a line
+  indented past the `-` of its variable, or containing no `-` at all,
+  continues the preceding description instead of starting a row. A group
+  of lines sharing indentation and `-` column is read as a nested list
+  (the fields of an output struct) and does become rows; a line starting
+  with `-` becomes a row with an empty name column; a line that fits none
+  of these spans both columns.
   `% Author: ...` lines are extracted (for plain doc pages) rather than
   rendered as body text.
 - `@ClassName` / `@functionName` tokens in text are auto-linked when the
