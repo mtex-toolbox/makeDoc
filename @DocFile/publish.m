@@ -18,9 +18,6 @@ function [html_out,success] = publish( docFiles, options)
 %                     being processed and any errors (default:
 %                     <outDir>/publish_log.txt). Written to disk
 %                     immediately so the log survives a MATLAB crash.
-%  options.showFigures - whether the figures the published code creates are
-%                     shown on screen (default: true). Set to false to
-%                     publish with hidden figures.
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
@@ -31,19 +28,18 @@ options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
 options = setDefault(options,'forceDoc',{});
 options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'));
-options = setDefault(options,'showFigures',true);
 
-% keep the figures the published code creates off the screen
+% the figures have to stay visible while publishing
 %
-% publish snapshots them with print, which does not need them visible, so
-% they can just as well stay hidden instead of flashing up one after the
-% other and taking the focus away for the length of a build. onCleanup
-% restores the setting even when publishing is interrupted.
-if ~options.showFigures
-  oldVisible = get(0,'DefaultFigureVisible');
-  set(0,'DefaultFigureVisible','off');
-  restoreVisible = onCleanup(@() set(0,'DefaultFigureVisible',oldVisible));
-end
+% There used to be a showFigures option switching DefaultFigureVisible off for
+% the length of a build, on the assumption that print does not need a figure on
+% screen. print does not - but publish never gets that far: captureFigures
+% (toolbox/matlab/codetools/+internal/+matlab/+publish/captureFigures.m) drops
+% every figure whose Visible is 'off' from the list it compares before and
+% after each code chunk, so nothing is ever handed to print and the pages come
+% out without a single image. Hiding the figures of a running build is not
+% possible from here - it needs a MATLAB that has no display to begin with
+% (-noFigureWindows, or a virtual X server).
 
 logFile = options.logFile;
 nErrors = 0;
