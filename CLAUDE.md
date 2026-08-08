@@ -84,6 +84,11 @@ Method files (`@DocFile/*.m`) — think of these as the class's public API:
 - `makeHelpToc.m` — recursively builds `helptoc.xml` by walking `.toc` files
   (see `readTocFile.m`/`hasTocFile.m`) or, for `*_index.m` files, by
   matching sibling files in the same `@ClassName` directory.
+- `needsPublish.m` — the per-file predicate `publish.m` uses to decide
+  whether a page is rebuilt (source newer than its html, `options.force`, or
+  listed in `options.forceDoc`), exposed as a logical array so a caller can
+  announce the size of a build before starting it — the web repository's
+  `makeDoc.m` prints `nnz(needsPublish(...))` per part up front.
 - `deadlink.m` — scans generated HTML for `href="...html"` links that don't
   resolve to an existing output file (documentation link checker).
 - `exclude.m` — filters a `DocFile` array by substring match on `sourceFile`.
