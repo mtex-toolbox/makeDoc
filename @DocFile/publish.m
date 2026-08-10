@@ -18,6 +18,11 @@ function [html_out,success] = publish( docFiles, options)
 %                     being processed and any errors (default:
 %                     <outDir>/publish_log.txt). Written to disk
 %                     immediately so the log survives a MATLAB crash.
+%  options.pauseFile - path to a file that suspends the run while it exists
+%                     (default: <outDir>/publish_pause). Create it from
+%                     anywhere - a shell, a second MATLAB, a file browser -
+%                     and publishing halts after the file it is working on;
+%                     delete it and the run continues where it left off.
 %
 % See also
 % DocFile/makeHelpToc makeToolboxXML
@@ -28,6 +33,7 @@ options = setDefault(options,'imageDir',options.outDir);
 options = setDefault(options,'force',false);
 options = setDefault(options,'forceDoc',{});
 options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'));
+options = setDefault(options,'pauseFile',fullfile(options.outDir,'publish_pause'));
 
 % the figures have to stay visible while publishing
 %
@@ -42,60 +48,75 @@ options = setDefault(options,'logFile',fullfile(options.outDir,'publish_log.txt'
 % (-noFigureWindows, or a virtual X server).
 
 logFile = options.logFile;
+pauseFile = options.pauseFile;
 nErrors = 0;
 writeLog(logFile,sprintf('==== publish run started: %d file(s) ====',numel(docFiles)));
 
+% a run takes hours - say how it can be halted without losing it
+dispPerm(['  pause the run with:  touch ' pauseFile]);
+
 %% prepare files to publish
+
+% which files have to be prepared - collected before the loop so that the
+% progress display can name the total, not only the file at hand
+toPrepare = false(size(docFiles));
 for k = 1:length(docFiles)
-  
   target = fullfile(options.tmpDir,docFiles(k).targetTemporary);
-    
-  if fileIsNewer(docFiles(k).sourceFile,target) || options.force || ...
-      any(strcmp(docFiles(k).sourceInfo.docName,options.forceDoc))
+  toPrepare(k) = fileIsNewer(docFiles(k).sourceFile,target) || options.force || ...
+    any(strcmp(docFiles(k).sourceInfo.docName,options.forceDoc));
+end
+nPrepare = nnz(toPrepare); iPrepare = 0;
 
-    disptmp(sprintf('preparing %s\n',docFiles(k).sourceInfo.docName));
-    writeLog(logFile,sprintf('START prepare  %s  (%s)', ...
-      docFiles(k).sourceInfo.docName,docFiles(k).sourceFile));
+for k = reshape(find(toPrepare),1,[])
 
-    try
-      if isFunction(docFiles(k)) || isClass(docFiles(k))
-        text = generateScript(docFiles(k),options);
-      else
-        text = read(docFiles(k).sourceFile);
+  waitWhilePaused(pauseFile,logFile);
 
-        % extract author
-        [startIndex,endIndex] = regexp(text,'% Author: .*?\n');
-        docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
-        text(startIndex:endIndex) = [];
+  target = fullfile(options.tmpDir,docFiles(k).targetTemporary);
 
-        % globally replace formulas, tables, etc.
-        text = globalReplacements(text,options);
-      end
+  iPrepare = iPrepare + 1;
+  disptmp(sprintf('preparing %s (%d/%d)\n', ...
+    docFiles(k).sourceInfo.docName,iPrepare,nPrepare));
+  writeLog(logFile,sprintf('START prepare  %s  (%d/%d)  (%s)', ...
+    docFiles(k).sourceInfo.docName,iPrepare,nPrepare,docFiles(k).sourceFile));
 
-    catch err
-      %disptmp(newline);
-      system(['touch ' docFiles(k).sourceFile]);
-      dispPerm(['  Error preparing <a href="matlab: edit(''' ...
-        docFiles(k).sourceFile ''')">',docFiles(k).sourceInfo.docName '</a>']);
-      disp(err.message);
-      disp(' ');
-      writeLog(logFile,sprintf('ERROR prepare  %s  (%s)\n%s', ...
-        docFiles(k).sourceInfo.docName,docFiles(k).sourceFile, ...
-        getReport(err,'extended','hyperlinks','off')));
-      nErrors = nErrors + 1;
-      continue
+  try
+    if isFunction(docFiles(k)) || isClass(docFiles(k))
+      text = generateScript(docFiles(k),options);
+    else
+      text = read(docFiles(k).sourceFile);
+
+      % extract author
+      [startIndex,endIndex] = regexp(text,'% Author: .*?\n');
+      docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
+      text(startIndex:endIndex) = [];
+
+      % globally replace formulas, tables, etc.
+      text = globalReplacements(text,options);
     end
 
-    fid = fopen(target,'w');
-    if fid > 0
-      fwrite(fid,text);
-      fclose(fid);
-    end
-
-    writeLog(logFile,sprintf('OK prepare  %s',docFiles(k).sourceInfo.docName));
-
-    disptmp('');
+  catch err
+    %disptmp(newline);
+    system(['touch ' docFiles(k).sourceFile]);
+    dispPerm(['  Error preparing <a href="matlab: edit(''' ...
+      docFiles(k).sourceFile ''')">',docFiles(k).sourceInfo.docName '</a>']);
+    disp(err.message);
+    disp(' ');
+    writeLog(logFile,sprintf('ERROR prepare  %s  (%s)\n%s', ...
+      docFiles(k).sourceInfo.docName,docFiles(k).sourceFile, ...
+      getReport(err,'extended','hyperlinks','off')));
+    nErrors = nErrors + 1;
+    continue
   end
+
+  fid = fopen(target,'w');
+  if fid > 0
+    fwrite(fid,text);
+    fclose(fid);
+  end
+
+  writeLog(logFile,sprintf('OK prepare  %s',docFiles(k).sourceInfo.docName));
+
+  disptmp('');
 end
 
 % finished script generation
@@ -123,21 +144,36 @@ oldDir = cd; cd(options.tmpDir);
 % remember settings
 settings = getappdata(0,'mtex');
 
-for docFile = docFiles
-  
+% which pages are actually rebuilt - the same condition publish used to test
+% inside the loop, evaluated up front so every message can say how far the
+% run has come. Determined after the preparation phase, since a file that
+% failed to prepare gets touched and thereby joins the list.
+toPublish = needsPublish(docFiles,options);
+nPublish = nnz(toPublish); iPublish = 0;
+
+for docFile = docFiles(toPublish)
+
+  waitWhilePaused(pauseFile,logFile);
+
   % reapply settings
   setappdata(0,'mtex',settings);
- 
+
+  % publishing runs from tmpDir and hands publish() a bare script name, so the
+  % current directory has to be tmpDir for every single file - not just when
+  % the loop is entered. The code of a published page may well change it:
+  % openExample copies its example into a working folder and cds there. One
+  % such page used to take the whole rest of the run with it, every following
+  % file failing with 'Unable to find script_....m'.
+  cd(options.tmpDir);
+
   % final html name with script_xxx_xxx
   htmlTarget = fullfile(options.outDir,[docFile.sourceInfo.docName '.html']);
 
-  % nothing to do
-  if ~fileIsNewer(docFile.sourceFile,htmlTarget) && ~options.force && ...
-      ~any(strcmp(docFile.sourceInfo.docName,options.forceDoc)), continue; end
-    
-  disptmp([ 'publishing: ' docFile.sourceInfo.docName])
-  writeLog(logFile,sprintf('START publish  %s  (%s)', ...
-    docFile.sourceInfo.docName,docFile.sourceFile));
+  iPublish = iPublish + 1;
+  disptmp(sprintf('publishing: %s (%d/%d)', ...
+    docFile.sourceInfo.docName,iPublish,nPublish))
+  writeLog(logFile,sprintf('START publish  %s  (%d/%d)  (%s)', ...
+    docFile.sourceInfo.docName,iPublish,nPublish,docFile.sourceFile));
 
   % update xml file
   stylePath = fileparts(pubSettings.stylesheet);
@@ -148,9 +184,8 @@ for docFile = docFiles
     evalin('base','format short');
 
     % reset plotting convention
-    pC = plottingConvention;
-    pC.makeDefault;
-
+    evalin('base','plottingConvention.ij.makeDefault')
+    
     rng(2,"twister"); % ensure we always have the same random numbers
     
     % update xml file
@@ -158,7 +193,7 @@ for docFile = docFiles
       str = strrep(docFile.sourceFile,mtex_path,'');
       options.xml.toolbox.pageSource.Text = strrep(str,'../examples/','');
       options.xml.toolbox.htmlTarget = [docFile.sourceInfo.docName '.html'];
-      if isfield(docFile.sourceInfo,'author')
+      if ~isempty(docFile.sourceInfo.author)
         options.xml.toolbox.author.Text = docFile.sourceInfo.author;
       end
       struct2xml(options.xml,fullfile(stylePath,'toolbox.xml'));      
@@ -242,6 +277,32 @@ end
 function opt = setDefault(opt,field,value)
 
 if ~isfield(opt,field), opt.(field) = value; end
+
+end
+
+function waitWhilePaused(pauseFile,logFile)
+% halt between two files as long as the pause file exists
+%
+% A full run takes hours and there is no way to suspend it from the command
+% window: MATLAB executes typed commands and hyperlink clicks only when it
+% is idle, and Ctrl+C aborts the run rather than pausing it. The one signal
+% that does reach a busy loop is the file system - create the pause file
+% (touch it from a shell, from a second MATLAB, from a file browser) and the
+% run stops after the file it is currently working on, keeping the whole
+% MATLAB state; delete the file and it carries on where it left off.
+%
+% dir() rather than exist() on purpose: exist consults the cached path,
+% which a file created behind MATLAB's back does not update.
+
+if isempty(dir(pauseFile)), return; end
+
+dispPerm(['  paused - delete ' pauseFile ' to continue']);
+writeLog(logFile,sprintf('PAUSED  (waiting for %s to be removed)',pauseFile));
+
+while ~isempty(dir(pauseFile)), pause(1); end
+
+dispPerm('  continuing');
+writeLog(logFile,'RESUMED');
 
 end
 

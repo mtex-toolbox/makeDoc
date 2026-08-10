@@ -81,6 +81,14 @@ Method files (`@DocFile/*.m`) — think of these as the class's public API:
   cross-links).
 - `isFunction.m` / `isClass.m` — sniff the source text (`function `,
   `classdef`) to decide how to treat a file.
+- `hasOwnHelp.m` / `dropUndocumentedMethods.m` — a method without a leading
+  comment block is not undocumented to MATLAB: `help` substitutes the
+  documentation of the built-in of the same name, so `S1FunHandle/numel.m`
+  would be published as a page about MATLAB's `numel` — including an example
+  section of `openExample` calls, which `generateScript` treats as code.
+  `dropUndocumentedMethods` removes those files from the list before both the
+  TOC and publishing; class definitions and plain functions are kept, having
+  nothing to inherit.
 - `makeHelpToc.m` — recursively builds `helptoc.xml` by walking `.toc` files
   (see `readTocFile.m`/`hasTocFile.m`) or, for `*_index.m` files, by
   matching sibling files in the same `@ClassName` directory.
@@ -166,11 +174,23 @@ MTEX itself (see `help/docGuide/UsersGuide/WritingDocumentation.m`), with
    whether a re-render is a real change is *not* done here: the web repository
    scores the resulting git diff with `tools/revert-unchanged-images.py` and
    restores the images that only differ cosmetically.
-4. Errors during either phase are caught per-file, logged with a
+   Both loops decide their work list *before* iterating (the publish loop via
+   `needsPublish.m`, evaluated after the preparation phase so files touched by
+   a preparation error are included), so every status line carries a progress
+   counter: `publishing: ODFReconstruction (11/202)`.
+4. Both loops call `waitWhilePaused` before each file: while `options.pauseFile`
+   (default `<outDir>/publish_pause`) exists, the run polls once a second
+   instead of starting the next file, and resumes when the file is deleted.
+   A busy MATLAB executes neither typed commands nor `matlab:` hyperlink
+   clicks, and Ctrl+C aborts a run instead of suspending it — the file system
+   is the only channel that reaches the loop, so the pause is triggered from
+   outside (`touch`, a second MATLAB, a file browser). The path is printed at
+   the start of every run.
+5. Errors during either phase are caught per-file, logged with a
    `matlab:`-scheme clickable link to the offending source line, and the
    source file's mtime is `touch`ed so it's retried next run — the whole
    batch does not abort.
-5. Every "starting file X" / "OK" / "ERROR" event is additionally appended,
+6. Every "starting file X" / "OK" / "ERROR" event is additionally appended,
    with a timestamp, to a persistent log file (`options.logFile`, default
    `<outDir>/publish_log.txt`) via the local `writeLog` helper. Each call
    opens, writes, and closes the file rather than keeping a handle open, so

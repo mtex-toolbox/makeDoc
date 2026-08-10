@@ -297,6 +297,15 @@ out = regexprep(out, '^[ \t]*%[ \t]*$', '%  %%', 'lineanchors');
 out = regexprep(out,'^\s*%\s*','', 'lineanchors');
 %out = regexprep(in, '^[ \t]*%[ \t]*', '', 'lineanchors');
 
+% an example section is code and is therefore executed while publishing, which
+% must not happen for openExample: it copies a MATLAB example into a working
+% folder and cds there. Those lines are not ours - a class method without its
+% own help comment inherits MATLAB's built-in documentation (S1FunHandle.numel
+% gets the one of numel, SO3TangentVector.unique the one of unique) and that
+% documentation refers to its examples this way. Commenting them out keeps the
+% reference visible without running it.
+out = regexprep(out,'^[ \t]*openExample\(.*$','% $0','lineanchors','dotexceptnewline');
+
 out = [newline out];
 end
 
