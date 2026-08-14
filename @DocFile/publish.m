@@ -183,8 +183,12 @@ for docFile = docFiles(toPublish)
     evalin('base','clear variables'); close all;
     evalin('base','format short');
 
-    % reset plotting convention
-    evalin('base','plottingConvention.ij.makeDefault')
+    % reset the frame state, not only the convention: a page may have made
+    % another frame the session default (specimenFrame.rolling.makeDefault)
+    % or mutated a registered frame's convention (plotx2north) - resetting
+    % only the convention would corrupt the registered frame for every
+    % following page
+    evalin('base','referenceFrame.reset')
     
     rng(2,"twister"); % ensure we always have the same random numbers
     
