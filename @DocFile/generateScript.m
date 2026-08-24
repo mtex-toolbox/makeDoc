@@ -315,8 +315,16 @@ if ~contains(file,'mtex')
   return
 end
 
-if any(strcmp(regexp(fileparts(file),filesep,'split'),['@' name]))
-  out = ['<' name '.' name '.html ' name '>'];
+% Anything inside an @Class folder publishes under that class. Naming a
+% method on its own - Euler, deformationTensor, calcDistortion - is common
+% in See also and used to link to name.html, which is never where the page
+% is: it is Class.name.html, and Class.Class.html for the classdef itself.
+parts = regexp(fileparts(file),filesep,'split');
+cls = parts(startsWith(parts,'@'));
+
+if ~isempty(cls)
+  cls = cls{end}(2:end);
+  out = ['<' cls '.' name '.html ' name '>'];
 end
 
 end
