@@ -273,10 +273,40 @@ end
 
 function out = seeAlso(in,varargin)
 out = regexprep(inline(in),'/','.');
-out = regexprep(out,'([\w\.s]*)','<$1.html $1>');
+
+% Replace each entry from the back, so the earlier positions stay valid.
+% A loop rather than a dynamic ${seeAlsoLink($0)} expression in regexprep:
+% those are evaluated in a context that cannot see a local function, and
+% fail with "Undefined function 'seeAlsoLink'".
+[tok,tokStart,tokEnd] = regexp(out,'[\w\.]+','match','start','end');
+for k = numel(tok):-1:1
+  out = [out(1:tokStart(k)-1) seeAlsoLink(tok{k}) out(tokEnd(k)+1:end)];
+end
+
 out = regexprep(out,'\n\n','\n%');
 % ensure we have exactly one white space after %
 out = regexprep(out, '^[ \t]*%[ \t]+', '% ', 'lineanchors');
+end
+
+function out = seeAlsoLink(name)
+% the link a single See also entry should become
+%
+% A class living in an @Name folder publishes as Name.Name.html while
+% anything else publishes as basename.html, so emitting Name.html for every
+% entry alike left every class named in a See also pointing nowhere - 221
+% dead links across the published help, 71 distinct classes.
+
+out = ['<' name '.html ' name '>'];
+
+if contains(name,'.'), return; end
+
+file = which(name);
+if isempty(file), return; end
+
+if any(strcmp(regexp(fileparts(file),filesep,'split'),['@' name]))
+  out = ['<' name '.' name '.html ' name '>'];
+end
+
 end
 
 

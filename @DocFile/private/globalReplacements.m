@@ -37,9 +37,19 @@ for k=numel(start):-1:1
   fhandle = str(start(k)+1:stop(k));
 
   file = which(fhandle);
-  if numel(regexp(file,fhandle))>1
+  if isempty(file), continue; end
+
+  % A class publishes as Name.Name.html only when it really sits in an
+  % @Name folder. Counting how often the name occurs in the path instead
+  % also fires when the *parent folder* happens to contain it, so
+  % geometry/spatialTransforms/spatialTransform.m asked for
+  % spatialTransform.spatialTransform.html and got nothing - 23 dead links,
+  % and planarColorKey has the same shape.
+  inClassFolder = any(strcmp(regexp(fileparts(file),filesep,'split'),['@' fhandle]));
+
+  if inClassFolder
     str =  [str(1:start(k)-1) '<' fhandle '.' fhandle '.html ' fhandle '>' str(stop(k)+1:end)];
-  elseif numel(regexp(file,fhandle))>0 && numel(regexp(file,'mtex'))>0
+  elseif contains(file,'mtex')
     str =  [str(1:start(k)-1) '<' fhandle '.html ' fhandle '>' str(stop(k)+1:end)];
   end
 end
