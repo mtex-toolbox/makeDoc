@@ -86,8 +86,16 @@ for k = reshape(find(toPrepare),1,[])
       text = read(docFiles(k).sourceFile);
 
       % extract author
-      [startIndex,endIndex] = regexp(text,'% Author: .*?\n');
-      docFiles(k).sourceInfo.author = text(startIndex+10:endIndex);
+      %
+      % A long author line wraps onto continuation lines, so the block runs
+      % on over every following '% ...' line and ends at the empty comment
+      % line that closes it (or at the next cell, or at code). Matching only
+      % up to the first line break cut such an author in half and left the
+      % rest of it in the source, where it became the introduction paragraph
+      % of the page - and hence its description in the search index.
+      [startIndex,endIndex] = regexp(text,'% Author: .*?\n(%[ \t]+\S.*?\n)*');
+      author = text(startIndex+10:endIndex);
+      docFiles(k).sourceInfo.author = strtrim(regexprep(author,'\n%[ \t]+',' '));
       text(startIndex:endIndex) = [];
 
       % globally replace formulas, tables, etc.
@@ -197,9 +205,14 @@ for docFile = docFiles(toPublish)
       str = strrep(docFile.sourceFile,mtex_path,'');
       options.xml.toolbox.pageSource.Text = strrep(str,'../examples/','');
       options.xml.toolbox.htmlTarget = [docFile.sourceInfo.docName '.html'];
-      if ~isempty(docFile.sourceInfo.author)
-        options.xml.toolbox.author.Text = docFile.sourceInfo.author;
-      end
+
+      % the author is a property of the page, so it has to be written for
+      % every one of them, empty ones included: options survives the loop,
+      % so leaving the field untouched for a page without an author gave it
+      % the author of the last page that had one - a handful of '% Author:'
+      % lines in ../examples ended up under every example published after
+      % them
+      options.xml.toolbox.author.Text = docFile.sourceInfo.author;
       struct2xml(options.xml,fullfile(stylePath,'toolbox.xml'));      
     end
     
