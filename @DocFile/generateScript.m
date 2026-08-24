@@ -301,7 +301,19 @@ out = ['<' name '.html ' name '>'];
 if contains(name,'.'), return; end
 
 file = which(name);
+
+% Nothing of that name in sight. It may still be a documentation page,
+% which is not on the MATLAB path, so link it and let the link check
+% decide.
 if isempty(file), return; end
+
+% MATLAB's own, not ours: unique, ndgrid, colormap and the colour map
+% names all appear in See also blocks and none of them has a page here, so
+% linking them only produces a dead link. Leave the name as plain text.
+if ~contains(file,'mtex')
+  out = name;
+  return
+end
 
 if any(strcmp(regexp(fileparts(file),filesep,'split'),['@' name]))
   out = ['<' name '.' name '.html ' name '>'];
