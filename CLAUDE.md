@@ -14,6 +14,29 @@ into a MATLAB help toolbox (`helptoc.xml`, `help.jar`, `helpsearch` DB).
 There is no non-MATLAB build system, no package manager, and no automated
 test suite — everything here is `.m` code executed from within MATLAB.
 
+## Every edit reads as if the previous version never existed
+
+**Change the line, the number, the sentence — and stop.** What the previous
+version did, why it was wrong and how the new value was measured belong in the
+commit message or an issue, never in the file. It takes two shapes, and the
+second is harder to catch because it sounds like precision:
+
+- **A comment justifying the edit** — what the old implementation did, which
+  release changed it, which dataset a number came from, what would break
+  without the line.
+- **Prose arguing with the text it replaced.** A doc page that said "the map
+  has turned by a quarter turn" was corrected to "The picture is mirrored
+  *rather than* turned" — the reader never saw the quarter turn, so the
+  sentence contradicts nobody and reads as a non sequitur. Same defect: "The
+  mismatch does *not simply* accumulate", "this figure has *no* single largest
+  grain to point at".
+
+**The test:** read the new text as someone who has never seen the old one. If a
+sentence only works for a reader who has, rewrite it as a plain statement of
+what is there. A negation is fine when it heads off a misreading available from
+what is in front of the reader and wrong when its referent is a sentence you
+have just deleted.
+
 ## Running / building the docs
 
 Everything is driven from MATLAB (not the shell). Typical workflow, taken
