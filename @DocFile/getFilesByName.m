@@ -11,11 +11,21 @@ function [ tocFiles,inName ] = getFilesByName( docFiles, names )
 %
 
 docFileNames = cellfun(@(x) x.name, {docFiles.sourceInfo},'UniformOutput',false);
+if ischar(names), names = {names}; end
+docNames = cellfun(@(x) x.docName, {docFiles.sourceInfo},'UniformOutput',false);
+for k = 1:numel(names)
+  exact = strcmp(docNames,names{k});
+  if any(exact)
+    docFileNames(strcmp(docFileNames,names{k}) | exact) = {''};
+    docFileNames(exact) = names(k);
+  end
+end
+
 
 [inName, order] = ismember(docFileNames,names);
 tocFiles = [];
 if any(inName)
   docFiles = docFiles(inName);
-  [order, ndx] = sort(order(inName));  
+  [order, ndx] = sort(order(inName));
   tocFiles = docFiles(ndx);
 end
